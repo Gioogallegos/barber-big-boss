@@ -164,7 +164,20 @@ export default function BookingSystem() {
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Big Boss BarberShop</h1>
-          <p className="text-gray-500 text-sm mt-1 flex items-center gap-1"><MapPin size={14} /> Santiago, Chile</p>
+          {/* --- AQUÍ ESTÁ EL CAMBIO: LINK DE UBICACIÓN --- */}
+          <div className="text-gray-500 text-sm mt-2 flex items-start justify-center gap-1 max-w-[280px]">
+            {/* Agregué 'text-red-500' y 'fill-red-500' para que se vea rojo sólido */}
+            <MapPin size={16} className="mt-0.5 flex-shrink-0 text-red-500 fill-red-100" />
+            <a 
+              href="https://www.google.com/maps/search/?api=1&query=Las+Tortolas+26,+La+Islita,+Isla+de+Maipo" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-black hover:underline transition-colors text-left leading-tight"
+            >
+              Las Tortolas 26, La Islita, Isla de Maipo
+            </a>
+          </div>
+
           <div className="flex items-center gap-1 mt-2 bg-gray-100 px-3 py-1 rounded-full">
             <Star size={12} className="text-yellow-500 fill-yellow-500" />
             <span className="text-xs font-bold text-gray-700">5.0</span>
@@ -189,13 +202,25 @@ export default function BookingSystem() {
 
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
           <div>
-            <h3 className="font-bold text-gray-800">Barba & Cejas</h3>
+            <h3 className="font-bold text-gray-800">Barba</h3>
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
               <Clock size={12} /> 15 minutos • Perfilado y diseño
             </p>
           </div>
           <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">
-            + $3.000
+            + $4.000
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
+          <div>
+            <h3 className="font-bold text-gray-800">Cejas</h3>
+            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+              <Clock size={12} /> 15 minutos • Perfilado y diseño
+            </p>
+          </div>
+          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">
+            + $1.000
           </div>
         </div>
 
@@ -309,7 +334,7 @@ export default function BookingSystem() {
                 <form onSubmit={handleInitialSubmit} className="space-y-4">
                   <div className={`bg-gray-50 p-3 rounded-xl border focus-within:ring-1 transition-all ${errors.name ? 'border-red-300 ring-1 ring-red-100' : 'border-gray-100 focus-within:border-black focus-within:ring-black'}`}>
                     <label className="text-xs text-gray-400 font-bold block mb-1">Tu Nombre</label>
-                    <input autoFocus className="w-full bg-transparent outline-none font-bold text-gray-800 placeholder-gray-300" placeholder="Ej: Jeni de Boi" value={clientName} onChange={handleNameChange} />
+                    <input autoFocus className="w-full bg-transparent outline-none font-bold text-gray-800 placeholder-gray-300" placeholder="Ej: Tommy Shelby" value={clientName} onChange={handleNameChange} />
                     {errors.name && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle size={10} /> {errors.name}</p>}
                   </div>
 
