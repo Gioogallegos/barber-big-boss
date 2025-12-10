@@ -10,7 +10,7 @@ import { format, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // --- CONFIGURACIÓN ---
-const BARBER_PHONE = "56988280660"; // TU NÚMERO
+const BARBER_PHONE = "56988280660"; // TU NÚMERO ACTUALIZADO
 
 // 1. LISTA DE HORARIOS (Sin duplicados y ordenada)
 const HOURS = [
@@ -93,6 +93,7 @@ export default function BookingSystem() {
       return;
     }
 
+    // Si la hora es de sobre cupo, mostramos la advertencia primero
     if (selectedSlot && OVERTIME_SLOTS.includes(selectedSlot)) {
       setShowOvertimeWarning(true);
     } else {
@@ -130,8 +131,9 @@ export default function BookingSystem() {
 
       const fechaBonita = format(selectedDate, "EEEE d 'de' MMMM", { locale: es });
       const totalPrice = isOvertime ? BASE_PRICE + EXTRA_FEE : BASE_PRICE;
-      const extraText = isOvertime ? ` *(Sobre Cupo +$3.000)*` : "";
+      const extraText = isOvertime ? ` *(Sobrecupo +$3.000)*` : "";
 
+      // MENSAJE ACTUALIZADO PARA DANIEL
       const mensaje = `Hola Daniel! Soy *${clientName}*. Agendé para el *${fechaBonita}* a las *${selectedSlot}*${extraText}. Total: $${totalPrice.toLocaleString('es-CL')}. Mi número es ${clientPhone}.`;
 
       setTimeout(() => {
@@ -170,8 +172,9 @@ export default function BookingSystem() {
         </div>
       </div>
 
-      {/* TARJETA SERVICIO */}
-      <div className="px-4 -mt-4">
+      {/* TARJETA SERVICIOS */}
+      <div className="px-4 -mt-4 space-y-2">
+        {/* Servicio Base */}
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800">Corte de Pelo</h3>
@@ -184,12 +187,11 @@ export default function BookingSystem() {
           </div>
         </div>
 
-        {/* Servicio 2 */}
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
           <div>
-            <h3 className="font-bold text-gray-800">Sobre Cupo 09:00 y 19:00</h3>
+            <h3 className="font-bold text-gray-800">Barba & Cejas</h3>
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 1 hora • Corte & Estilo
+              <Clock size={12} /> 15 minutos • Perfilado y diseño
             </p>
           </div>
           <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">
@@ -197,15 +199,16 @@ export default function BookingSystem() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
+        {/* Servicio Sobre Cupo Info */}
+        <div className="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-100 flex justify-between items-center">
           <div>
-            <h3 className="font-bold text-gray-800">Barba & Cejas</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 15 min • Perfilado Barba & Cejas
+            <h3 className="font-bold text-amber-900">Sobrecupo (20-21 hrs)</h3>
+            <p className="text-xs text-amber-700 mt-1 flex items-center gap-1">
+              <AlertTriangle size={12} /> Horario extendido
             </p>
           </div>
-          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">
-            + $3.000
+          <div className="bg-amber-500 text-white px-3 py-1 rounded-lg text-sm font-bold">
+             + $3.000
           </div>
         </div>
       </div>
@@ -271,7 +274,7 @@ export default function BookingSystem() {
                     {time}
                     {isOvertime && !isDisabled && (
                       <span className="text-[9px] font-bold bg-amber-200 text-amber-900 px-1.5 rounded-sm leading-tight">
-                        SOBRE CUPO
+                        SOBRECUPO
                       </span>
                     )}
                   </button>
@@ -296,7 +299,7 @@ export default function BookingSystem() {
                     <p className="text-xs text-gray-400 uppercase font-bold">Confirmando reserva</p>
                     <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                       {selectedSlot}
-                      {OVERTIME_SLOTS.includes(selectedSlot) && <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Sobre Cupo</span>}
+                      {OVERTIME_SLOTS.includes(selectedSlot) && <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Sobrecupo</span>}
                     </h3>
                     <p className="text-sm text-gray-500 capitalize">{format(selectedDate, 'EEEE d MMMM', { locale: es })}</p>
                   </div>
@@ -336,16 +339,16 @@ export default function BookingSystem() {
                   <AlertTriangle className="text-amber-600" size={32} />
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-2">¡Atención! Hora Sobre Cupo</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">¡Atención! Hora sobrecupo</h3>
 
                 <div className="bg-gray-50 p-4 rounded-xl text-left mb-6 border border-gray-200">
-                  <p className="text-gray-600 text-sm mb-3">Has seleccionado un horario especial fuera de turno regular. Esto tiene un costo adicional.</p>
+                  <p className="text-gray-600 text-sm mb-3">Has seleccionado un sobrecupo. Esto tiene un costo adicional.</p>
                   <div className="flex justify-between items-center text-sm mb-1 text-gray-400">
                     <span>Corte Base:</span>
                     <span>${BASE_PRICE.toLocaleString('es-CL')}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm mb-2 text-amber-600 font-bold">
-                    <span>+ Recargo Sobre Cupo:</span>
+                    <span>+ Recargo sobrecupo:</span>
                     <span>${EXTRA_FEE.toLocaleString('es-CL')}</span>
                   </div>
                   <div className="border-t pt-2 flex justify-between items-center font-black text-lg text-gray-900">
