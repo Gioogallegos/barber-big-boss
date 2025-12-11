@@ -200,7 +200,7 @@ export default function BookingSystem() {
               <Clock size={12} /> 15 minutos • Perfilado
             </p>
           </div>
-          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">+ $4.000</div>
+          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">+$4.000</div>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
@@ -210,7 +210,7 @@ export default function BookingSystem() {
               <Clock size={12} /> 15 minutos • Perfilado
             </p>
           </div>
-          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">+ $1.000</div>
+          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">+$1.000</div>
         </div>
 
         {/* Tarjeta Informativa de Sobrecupo */}
@@ -222,7 +222,7 @@ export default function BookingSystem() {
               <AlertTriangle size={12} /> Horario extendido
             </p>
           </div>
-          <div className="bg-amber-500 text-white px-3 py-1 rounded-lg text-sm font-bold">+ $3.000</div>
+          <div className="bg-amber-500 text-white px-3 py-1 rounded-lg text-sm font-bold">+$3.000</div>
         </div>
       </div>
 
