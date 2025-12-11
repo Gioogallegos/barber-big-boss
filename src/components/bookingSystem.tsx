@@ -10,17 +10,18 @@ import { format, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // --- CONFIGURACIÓN ---
-const BARBER_PHONE = "56988280660"; // TU NÚMERO ACTUALIZADO
+const BARBER_PHONE = "56988280660"; 
 
-// 1. LISTA DE HORARIOS (Sin duplicados y ordenada)
+// 1. LISTA DE HORARIOS (Agregadas 08:00 y 09:00 al inicio)
 const HOURS = [
+  '08:00', '09:00', // <--- NUEVAS HORAS MAÑANA
   '10:00', '11:00', '12:00', '13:00',
   '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
   '20:00', '21:00'
 ];
 
-// 2. DEFINIR SOBRE CUPO (Solo 20:00 y 21:00)
-const OVERTIME_SLOTS = ['20:00', '21:00'];
+// 2. DEFINIR SOBRE CUPO (Mañana y Noche)
+const OVERTIME_SLOTS = ['08:00', '09:00', '20:00', '21:00']; // <--- AQUI SE DEFINEN LAS QUE COBRAN EXTRA
 
 const BASE_PRICE = 10000;
 const EXTRA_FEE = 3000;
@@ -46,7 +47,6 @@ export default function BookingSystem() {
   const [processing, setProcessing] = useState(false);
   const [errors, setErrors] = useState({ name: '', phone: '' });
 
-  // Nuevo estado: Controla si mostramos la advertencia de sobre cupo
   const [showOvertimeWarning, setShowOvertimeWarning] = useState(false);
 
   const isDayBlocked = appointments.some(app => (app as any).type === 'day_blocked');
@@ -93,7 +93,6 @@ export default function BookingSystem() {
       return;
     }
 
-    // Si la hora es de sobre cupo, mostramos la advertencia primero
     if (selectedSlot && OVERTIME_SLOTS.includes(selectedSlot)) {
       setShowOvertimeWarning(true);
     } else {
@@ -133,7 +132,6 @@ export default function BookingSystem() {
       const totalPrice = isOvertime ? BASE_PRICE + EXTRA_FEE : BASE_PRICE;
       const extraText = isOvertime ? ` *(Sobrecupo +$3.000)*` : "";
 
-      // MENSAJE ACTUALIZADO PARA DANIEL
       const mensaje = `Hola Daniel! Soy *${clientName}*. Agendé para el *${fechaBonita}* a las *${selectedSlot}*${extraText}. Total: $${totalPrice.toLocaleString('es-CL')}. Mi número es ${clientPhone}.`;
 
       setTimeout(() => {
@@ -156,7 +154,6 @@ export default function BookingSystem() {
       <div className="bg-white p-6 pb-8 rounded-b-3xl shadow-sm border-b border-gray-100">
         <div className="flex flex-col items-center text-center">
           <div className="w-24 h-24 rounded-full bg-gray-200 mb-4 overflow-hidden border-4 border-white shadow-md">
-            {/* FOTO LOGO */}
             <img
               src="/foto-barberia-big-boss.jpg"
               alt="Logo Barbería Big Boss"
@@ -164,9 +161,8 @@ export default function BookingSystem() {
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Big Boss BarberShop</h1>
-          {/* --- AQUÍ ESTÁ EL CAMBIO: LINK DE UBICACIÓN --- */}
+          
           <div className="text-gray-500 text-sm mt-2 flex items-start justify-center gap-1 max-w-[280px]">
-            {/* Agregué 'text-red-500' y 'fill-red-500' para que se vea rojo sólido */}
             <MapPin size={16} className="mt-0.5 flex-shrink-0 text-red-500 fill-red-100" />
             <a 
               href="https://www.google.com/maps/search/?api=1&query=Las+Tortolas+26,+La+Islita,+Isla+de+Maipo" 
@@ -174,7 +170,7 @@ export default function BookingSystem() {
               rel="noopener noreferrer"
               className="hover:text-black hover:underline transition-colors text-left leading-tight"
             >
-              Las Tortolas 26, La Islita, Isla de Maipo
+              Las Tortolas 26, La Islita, Isla de Maipo (Ver mapa)
             </a>
           </div>
 
@@ -187,7 +183,6 @@ export default function BookingSystem() {
 
       {/* TARJETA SERVICIOS */}
       <div className="px-4 -mt-4 space-y-2">
-        {/* Servicio Base */}
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800">Corte de Pelo</h3>
@@ -195,46 +190,39 @@ export default function BookingSystem() {
               <Clock size={12} /> 1 hora • Corte & Estilo
             </p>
           </div>
-          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">
-            $10.000
-          </div>
+          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">$10.000</div>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800">Barba</h3>
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 15 minutos • Perfilado y diseño
+              <Clock size={12} /> 15 minutos • Perfilado
             </p>
           </div>
-          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">
-            + $4.000
-          </div>
+          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">+ $4.000</div>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800">Cejas</h3>
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 15 minutos • Perfilado y diseño
+              <Clock size={12} /> 15 minutos • Perfilado
             </p>
           </div>
-          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">
-            + $1.000
-          </div>
+          <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">+ $1.000</div>
         </div>
 
-        {/* Servicio Sobre Cupo Info */}
+        {/* Tarjeta Informativa de Sobrecupo */}
         <div className="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-100 flex justify-between items-center">
           <div>
-            <h3 className="font-bold text-amber-900">Sobrecupo (20-21 hrs)</h3>
+            {/* Texto actualizado para reflejar mañana y noche */}
+            <h3 className="font-bold text-amber-900">Sobrecupo (08-09 / 20-21 hrs)</h3>
             <p className="text-xs text-amber-700 mt-1 flex items-center gap-1">
               <AlertTriangle size={12} /> Horario extendido
             </p>
           </div>
-          <div className="bg-amber-500 text-white px-3 py-1 rounded-lg text-sm font-bold">
-             + $3.000
-          </div>
+          <div className="bg-amber-500 text-white px-3 py-1 rounded-lg text-sm font-bold">+ $3.000</div>
         </div>
       </div>
 
@@ -291,7 +279,7 @@ export default function BookingSystem() {
                     ${isDisabled
                         ? 'bg-gray-100 text-gray-300 border-transparent cursor-not-allowed'
                         : isOvertime
-                          ? 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100' // Estilo Sobre Cupo
+                          ? 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100' // Estilo Sobrecupo
                           : 'bg-white text-gray-800 border-gray-200 hover:bg-black hover:text-white'
                       }
                   `}
@@ -364,16 +352,16 @@ export default function BookingSystem() {
                   <AlertTriangle className="text-amber-600" size={32} />
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-2">¡Atención! Hora sobrecupo</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">¡Atención! Hora Sobrecupo</h3>
 
                 <div className="bg-gray-50 p-4 rounded-xl text-left mb-6 border border-gray-200">
-                  <p className="text-gray-600 text-sm mb-3">Has seleccionado un sobrecupo. Esto tiene un costo adicional.</p>
+                  <p className="text-gray-600 text-sm mb-3">Has seleccionado un horario especial fuera de turno regular. Esto tiene un costo adicional.</p>
                   <div className="flex justify-between items-center text-sm mb-1 text-gray-400">
                     <span>Corte Base:</span>
                     <span>${BASE_PRICE.toLocaleString('es-CL')}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm mb-2 text-amber-600 font-bold">
-                    <span>+ Recargo sobrecupo:</span>
+                    <span>+ Recargo Sobrecupo:</span>
                     <span>${EXTRA_FEE.toLocaleString('es-CL')}</span>
                   </div>
                   <div className="border-t pt-2 flex justify-between items-center font-black text-lg text-gray-900">
