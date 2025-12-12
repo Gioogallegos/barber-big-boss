@@ -9,6 +9,7 @@ import { Loader2, X, MapPin, Clock, ChevronRight, Star, CalendarX, AlertCircle, 
 import { format, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+
 // --- CONFIGURACIÓN ---
 const BARBER_PHONE = "56988280660"; 
 
@@ -104,7 +105,7 @@ export default function BookingSystem() {
     if (!selectedSlot) return;
     setProcessing(true);
 
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    const dateStr = format(selectedDate, 'yyyy-MM-dd'); 
     const appointmentId = `${dateStr}-${selectedSlot}`;
     const isOvertime = OVERTIME_SLOTS.includes(selectedSlot);
 

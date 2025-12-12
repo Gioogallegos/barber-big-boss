@@ -3,12 +3,17 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { format } from 'date-fns'; // IMPORTANTE: Usamos date-fns
 
 export interface Appointment {
   id: string;
   date: string;
   time: string;
   clientName: string;
+  clientPhone?: string;
+  type?: string;
+  isOvertime?: boolean;
+  createdAt?: string;
 }
 
 export function useAppointments(selectedDate: Date) {
@@ -16,16 +21,15 @@ export function useAppointments(selectedDate: Date) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Convertimos la fecha JS a string YYYY-MM-DD para buscar en la BD
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    // CORRECCIÓN: Usamos format() en lugar de toISOString()
+    // Esto asegura que "23 de Dic" sea siempre "2025-12-23" sin importar la hora
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
     
-    // Consulta: "Dame documentos de la colección 'appointments' donde la fecha sea X"
     const q = query(
       collection(db, "appointments"),
       where("date", "==", dateStr)
     );
 
-    // Escuchamos cambios en tiempo real
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -33,6 +37,9 @@ export function useAppointments(selectedDate: Date) {
       })) as Appointment[];
       
       setAppointments(data);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching appointments:", error);
       setLoading(false);
     });
 

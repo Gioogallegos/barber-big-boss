@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import { deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/src/lib/firebase';
-import { useAppointments } from '@/src/hooks/useAppointments';  
+import { useAppointments } from '@/src/hooks/useAppointments';
 import { toast } from 'sonner';
-import { Trash2, LogOut, User, Phone, Edit2, X, Ban, CheckCircle, Clock, History, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
-import { format, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isToday } from 'date-fns';
+import { Trash2, LogOut, User, Phone, Edit2, X, Ban, CheckCircle, History, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function AdminPage() {
@@ -16,11 +16,10 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [loadingAuth, setLoadingAuth] = useState(true);
   
-  // Estado principal de la fecha seleccionada
   const [date, setDate] = useState(new Date());
   
-  // Estado para controlar qué semana estamos viendo en la barra de navegación
-  const [viewWeekStart, setViewWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 })); // 1 = Lunes
+  // NAVEGACIÓN SEMANAL
+  const [viewWeekStart, setViewWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   const { appointments, loading } = useAppointments(date);
   const [editingApp, setEditingApp] = useState<any>(null);
@@ -46,9 +45,7 @@ export default function AdminPage() {
 
   const handleLogout = async () => { await signOut(auth); };
 
-  // --- LÓGICA DE NAVEGACIÓN SEMANAL ---
-  
-  // Generar los 7 días de la semana visible
+  // --- LOGICA DE NAVEGACIÓN ---
   const weekDays = eachDayOfInterval({
     start: viewWeekStart,
     end: endOfWeek(viewWeekStart, { weekStartsOn: 1 })
@@ -58,17 +55,17 @@ export default function AdminPage() {
   const prevWeek = () => setViewWeekStart(subWeeks(viewWeekStart, 1));
   
   const selectDay = (day: Date) => {
-    // Normalizamos a mediodía para evitar problemas de timezone
-    const safeDate = new Date(day);
-    safeDate.setHours(12, 0, 0, 0);
-    setDate(safeDate);
-    setShowHistory(false); // Resetear vista al cambiar día
+    // Ya no necesitamos hack de horas, solo pasar el día
+    setDate(day);
+    setShowHistory(false);
   };
 
   // --- ACCIONES ADMIN ---
   const toggleBlockDay = async () => {
-    const dateStr = date.toISOString().split('T')[0];
+    // CORRECCIÓN: Usar format para consistencia de fecha
+    const dateStr = format(date, 'yyyy-MM-dd');
     const blockDocId = `${dateStr}-BLOCK`;
+    
     try {
       if (isDayBlocked) {
         if(!confirm("¿Abrir agenda?")) return;
@@ -76,10 +73,17 @@ export default function AdminPage() {
         toast.success("Abierto");
       } else {
         if(!confirm("¿Cerrar día?")) return;
-        await setDoc(doc(db, "appointments", blockDocId), { date: dateStr, type: 'day_blocked', createdAt: new Date().toISOString() });
+        await setDoc(doc(db, "appointments", blockDocId), { 
+          date: dateStr, 
+          type: 'day_blocked', 
+          createdAt: new Date().toISOString() 
+        });
         toast.success("Cerrado");
       }
-    } catch (e) { toast.error("Error"); }
+    } catch (e: any) { 
+      console.error(e);
+      toast.error("Error al cambiar estado"); 
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -97,7 +101,7 @@ export default function AdminPage() {
     } catch (error) { toast.error("Error"); }
   };
 
-  // --- LÓGICA DE FILTRADO ---
+  // --- LÓGICA FILTRADO ---
   const now = new Date();
   const isSelectedDateToday = isSameDay(date, now);
   const currentHour = now.getHours();
@@ -147,9 +151,8 @@ export default function AdminPage() {
           <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 p-2"><LogOut size={20}/></button>
         </div>
         
-        {/* --- NUEVA NAVEGACIÓN SEMANAL --- */}
+        {/* NAVEGACIÓN SEMANAL */}
         <div className="bg-white pb-4 shadow-sm mb-4">
-          {/* Control de Mes/Semana */}
           <div className="flex justify-between items-center px-4 py-2 mb-2">
             <button onClick={prevWeek} className="p-1 rounded-full hover:bg-slate-100"><ChevronLeft size={20}/></button>
             <span className="text-sm font-bold text-slate-600 capitalize">
@@ -158,7 +161,6 @@ export default function AdminPage() {
             <button onClick={nextWeek} className="p-1 rounded-full hover:bg-slate-100"><ChevronRight size={20}/></button>
           </div>
 
-          {/* Tira de Días (Horizontal Scroll) */}
           <div className="flex justify-between px-2 gap-1 overflow-x-auto scrollbar-hide">
             {weekDays.map((day) => {
               const isSelected = isSameDay(day, date);
@@ -182,8 +184,6 @@ export default function AdminPage() {
                   <span className={`text-lg font-bold ${isTodayDay && !isSelected ? 'text-blue-600' : ''}`}>
                     {format(day, 'd')}
                   </span>
-                  
-                  {/* Punto indicador de HOY */}
                   {isTodayDay && (
                     <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-blue-600'}`}></span>
                   )}
@@ -194,7 +194,7 @@ export default function AdminPage() {
         </div>
 
         <div className="px-4">
-          {/* ACCIÓN BLOQUEAR (Más compacto) */}
+          {/* ACCIÓN BLOQUEAR */}
           {!showHistory && (
             <div className="mb-4">
               <button 
@@ -208,7 +208,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* TABS COMPACTOS */}
+          {/* TABS */}
           <div className="flex p-1 bg-white rounded-xl shadow-sm mb-4 border border-slate-200">
             <button 
               onClick={() => setShowHistory(false)}
@@ -224,11 +224,11 @@ export default function AdminPage() {
             </button>
           </div>
 
-          {/* --- LISTA DE RESERVAS --- */}
+          {/* LISTA RESERVAS */}
           <div className="space-y-3 pb-10">
             {loading && <p className="text-center py-10 text-slate-400 text-sm animate-pulse">Buscando citas...</p>}
             
-            {/* VISTA 1: PENDIENTES */}
+            {/* VISTA PENDIENTES */}
             {!showHistory && (
               <>
                 {!loading && !isDayBlocked && upcomingAppointments.length === 0 && (
@@ -243,7 +243,10 @@ export default function AdminPage() {
                     <div className="flex justify-between items-center border-b border-slate-50 pb-2">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl font-black text-slate-800 tracking-tight">{app.time}</span>
-                        {/* Etiqueta de estado visual */}
+                        {/* Indicador de sobrecupo visual en admin */}
+                        {(app as any).isOvertime && (
+                          <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">SOBRECUPO</span>
+                        )}
                         <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                       </div>
                       <div className="flex gap-1">
@@ -269,7 +272,7 @@ export default function AdminPage() {
               </>
             )}
 
-            {/* VISTA 2: HISTORIAL */}
+            {/* VISTA HISTORIAL */}
             {showHistory && (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 {pastAppointments.length === 0 ? (
@@ -297,7 +300,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* MODAL EDITAR (Estilizado) */}
+      {/* MODAL EDITAR */}
       {editingApp && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
