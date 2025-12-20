@@ -10,7 +10,7 @@ import { format, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // --- CONFIGURACIÓN ---
-const BARBER_PHONE = "56988280660"; 
+const BARBER_PHONE = "56988280660";
 
 const HOURS = [
   '08:00', '09:00',
@@ -46,7 +46,7 @@ export default function BookingSystem() {
   const [errors, setErrors] = useState({ name: '', phone: '' });
 
   const [showOvertimeWarning, setShowOvertimeWarning] = useState(false);
-  
+
   // NUEVO: Estado para mostrar pantalla de éxito
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
@@ -130,7 +130,7 @@ export default function BookingSystem() {
       toast.success("¡Reserva confirmada!");
       // NO cerramos el modal ni redirigimos automáticamente
       // Activamos la pantalla de éxito
-      setBookingSuccess(true); 
+      setBookingSuccess(true);
 
     } catch (error: any) {
       toast.error(typeof error === 'string' ? error : "Error al reservar");
@@ -142,14 +142,14 @@ export default function BookingSystem() {
   // Función para abrir WhatsApp manualmente desde el botón de éxito
   const openWhatsApp = () => {
     if (!selectedSlot) return;
-    
+
     const isOvertime = OVERTIME_SLOTS.includes(selectedSlot);
     const fechaBonita = format(selectedDate, "EEEE d 'de' MMMM", { locale: es });
     const totalPrice = isOvertime ? BASE_PRICE + EXTRA_FEE : BASE_PRICE;
     const extraText = isOvertime ? ` *(Sobrecupo +$3.000)*` : "";
 
     const mensaje = `Hola Daniel! Soy *${clientName}*. Agendé para el *${fechaBonita}* a las *${selectedSlot}*${extraText}. Total: $${totalPrice.toLocaleString('es-CL')}. Mi número es ${clientPhone}.`;
-    
+
     window.open(`https://wa.me/${BARBER_PHONE}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -171,9 +171,9 @@ export default function BookingSystem() {
           <h1 className="text-2xl font-bold text-gray-900">Big Boss BarberShop</h1>
           <div className="text-gray-500 text-sm mt-2 flex items-start justify-center gap-1 max-w-[280px]">
             <MapPin size={16} className="mt-0.5 flex-shrink-0 text-red-500 fill-red-100" />
-            <a 
-              href="https://www.google.com/maps/search/?api=1&query=Las+Tortolas+26,+La+Islita,+Isla+de+Maipo" 
-              target="_blank" 
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Las+Tortolas+26,+La+Islita,+Isla+de+Maipo"
+              target="_blank"
               rel="noopener noreferrer"
               className="hover:text-black hover:underline transition-colors text-left leading-tight"
             >
@@ -187,33 +187,46 @@ export default function BookingSystem() {
         </div>
       </div>
 
-      {/* SERVICIOS */}
+      {/* TARJETA SERVICIOS */}
       <div className="px-4 -mt-4 space-y-2">
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800">Corte de Pelo</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><Clock size={12} /> 1 hora • Corte & Estilo</p>
+            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+              <Clock size={12} /> 1 hora • Corte & Estilo
+            </p>
           </div>
           <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">$10.000</div>
         </div>
+
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800">Barba</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><Clock size={12} /> 15 min</p>
+            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+              <Clock size={12} /> 15 minutos • Perfilado
+            </p>
           </div>
           <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">+$4.000</div>
         </div>
+
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800">Cejas</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><Clock size={12} /> 15 min</p>
+            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+              <Clock size={12} /> 15 minutos • Perfilado
+            </p>
           </div>
           <div className="bg-black text-white px-3 py-1 rounded-lg text-sm font-bold">+$1.000</div>
         </div>
+
+        {/* Tarjeta Informativa de Sobrecupo */}
         <div className="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-100 flex justify-between items-center">
           <div>
+            {/* Texto actualizado para reflejar mañana y noche */}
             <h3 className="font-bold text-amber-900">Sobrecupo (08-09 / 20-21 hrs)</h3>
-            <p className="text-xs text-amber-700 mt-1 flex items-center gap-1"><AlertTriangle size={12} /> Horario extendido</p>
+            <p className="text-xs text-amber-700 mt-1 flex items-center gap-1">
+              <AlertTriangle size={12} /> Horario extendido
+            </p>
           </div>
           <div className="bg-amber-500 text-white px-3 py-1 rounded-lg text-sm font-bold">+$3.000</div>
         </div>
@@ -310,7 +323,7 @@ export default function BookingSystem() {
                 >
                   Enviar WhatsApp <ChevronRight />
                 </button>
-                <button 
+                <button
                   onClick={() => setSelectedSlot(null)}
                   className="mt-4 text-gray-400 text-sm font-medium hover:text-gray-600"
                 >
