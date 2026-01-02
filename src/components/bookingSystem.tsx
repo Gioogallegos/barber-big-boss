@@ -192,7 +192,7 @@ export default function BookingSystem() {
             />
           </div>
           {/* CAMBIADO A FONT-SANS */}
-          <h1 className="text-2xl font-bold text-white tracking-wider uppercase font-sans">Big Boss Barber</h1>
+          <h1 className="text-2xl font-bold text-white tracking-wider font-sans">Big Boss BarberShop</h1>
           
           <div className="text-neutral-400 text-sm mt-2 flex items-start justify-center gap-1 max-w-[280px]">
             <MapPin size={16} className="mt-0.5 flex-shrink-0 text-red-600" />
