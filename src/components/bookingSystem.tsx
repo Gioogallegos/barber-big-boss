@@ -14,7 +14,7 @@ const BARBER_PHONE = "56988280660";
 
 // FOTOS DEL CARRUSEL
 const GALLERY_IMAGES = ["corte 1.jpeg", "corte 2.jpeg", "corte 3.jpeg",
-   "corte 4.jpeg", "corte 5.jpeg", "corte 6.jpeg"];
+  "corte 4.jpeg", "corte 5.jpeg", "corte 6.jpeg"];
 
 const HOURS = [
   '08:00', '09:00',
@@ -208,40 +208,42 @@ export default function BookingSystem() {
         </div>
       </div>
 
-        {/*---- BIOGRAFIA ----*/}
+      {/*---- BIOGRAFIA ----*/}
 
-      {/* --- CARRUSEL AUTOMÁTICO (Con Pausa Táctil) --- */}
-      <div className="mt-8 pl-4">
-        <h3 className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
-          <ImageIcon size={12}/> Cortes Recientes
+      <div className="mt-6 pl-2 relative z-10">
+        <h3 className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2 pl-2">
+          <ImageIcon size={12} /> Estilos Recientes
         </h3>
-        
-        <div 
+
+        <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide pr-4 snap-x touch-pan-x"
+          // Eliminado touch-pan-x para permitir scroll vertical en móvil
+          className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide pr-4 snap-x"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={() => setIsPaused(true)}
           onTouchEnd={() => setIsPaused(false)}
         >
           {GALLERY_IMAGES.map((img, index) => (
-            <div 
-              key={index} 
-              className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-slate-800 shadow-lg relative group cursor-pointer transition-all duration-500 hover:border-amber-700/50 hover:shadow-amber-900/20 hover:shadow-2xl"
+            <div
+              key={index}
+              // Se agregó 'active:' para feedback en móvil
+              className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-slate-800 shadow-lg relative group cursor-pointer transition-all duration-500 hover:border-amber-700/50 hover:shadow-amber-900/20 active:border-amber-700 active:shadow-amber-900/40 active:scale-95"
             >
-              <img 
-                src={img} 
-                alt={`Corte ${index + 1}`} 
-                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 ease-out"
+              <img
+                src={img}
+                alt={`Corte ${index + 1}`}
+                // AQUÍ EL CAMBIO CLAVE: group-active:grayscale-0
+                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-active:grayscale-0 group-hover:scale-110 group-active:scale-110 transition-all duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-500 delay-100">
                 <ZoomIn size={16} className="text-white/80" />
               </div>
               <div className="absolute bottom-3 left-0 right-0 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 border-b border-amber-500/0 group-hover:border-amber-500 pb-0.5">
-                    Estilo {index + 1}
-                 </span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 border-b border-amber-500/0 group-hover:border-amber-500 pb-0.5">
+                  Estilo {index + 1}
+                </span>
               </div>
             </div>
           ))}
