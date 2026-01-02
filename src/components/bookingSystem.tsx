@@ -10,16 +10,11 @@ import { format, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // --- CONFIGURACIÓN ---
-const BARBER_PHONE = "56988280660"; 
+const BARBER_PHONE = "56988280660";
 
 // FOTOS DEL CARRUSEL
-const GALLERY_IMAGES = [
-  "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=500&auto=format&fit=crop&q=60", 
-  "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&auto=format&fit=crop&q=60", 
-  "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=500&auto=format&fit=crop&q=60", 
-  "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&auto=format&fit=crop&q=60", 
-  "https://images.unsplash.com/photo-1517832606299-7ae9b720a186?w=500&auto=format&fit=crop&q=60", 
-];
+const GALLERY_IMAGES = ["corte 1.jpeg", "corte 2.jpeg", "corte 3.jpeg",
+   "corte 4.jpeg", "corte 5.jpeg", "corte 6.jpeg"];
 
 const HOURS = [
   '08:00', '09:00',
@@ -72,14 +67,14 @@ export default function BookingSystem() {
       if (scrollRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
         const isEnd = scrollLeft + clientWidth >= scrollWidth - 10;
-        
+
         if (isEnd) {
           scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
         } else {
           scrollRef.current.scrollBy({ left: 176, behavior: 'smooth' });
         }
       }
-    }, 3000); 
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [isPaused]);
@@ -154,7 +149,7 @@ export default function BookingSystem() {
       });
 
       toast.success("¡Reserva confirmada!");
-      setBookingSuccess(true); 
+      setBookingSuccess(true);
 
     } catch (error: any) {
       toast.error(typeof error === 'string' ? error : "Error al reservar");
@@ -165,40 +160,40 @@ export default function BookingSystem() {
 
   const openWhatsApp = () => {
     if (!selectedSlot) return;
-    
+
     const isOvertime = OVERTIME_SLOTS.includes(selectedSlot);
     const fechaBonita = format(selectedDate, "EEEE d 'de' MMMM", { locale: es });
     const totalPrice = isOvertime ? BASE_PRICE + EXTRA_FEE : BASE_PRICE;
     const extraText = isOvertime ? ` *(Sobrecupo +$3.000)*` : "";
 
     const mensaje = `Hola Daniel! Soy *${clientName}*. Agendé para el *${fechaBonita}* a las *${selectedSlot}*${extraText}. Total: $${totalPrice.toLocaleString('es-CL')}. Mi número es ${clientPhone}.`;
-    
+
     window.open(`https://wa.me/${BARBER_PHONE}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
-  if (!isMounted) return <div className="h-screen flex items-center justify-center bg-neutral-950"><Loader2 className="animate-spin text-neutral-500" /></div>;
+  if (!isMounted) return <div className="h-screen flex items-center justify-center bg-slate-950"><Loader2 className="animate-spin text-slate-500" /></div>;
 
   return (
-    <div className="max-w-md mx-auto bg-neutral-950 min-h-screen pb-20 font-sans text-neutral-200">
+    <div className="max-w-md mx-auto bg-slate-950 min-h-screen pb-20 font-sans text-slate-200">
 
       {/* HEADER */}
-      <div className="bg-neutral-900 p-6 pb-8 rounded-b-3xl shadow-2xl shadow-black border-b border-neutral-800">
+      <div className="bg-slate-900 p-6 pb-8 rounded-b-3xl shadow-2xl shadow-black border-b border-slate-800">
         <div className="flex flex-col items-center text-center">
-          <div className="w-24 h-24 rounded-full bg-neutral-800 mb-4 overflow-hidden border-2 border-neutral-700 shadow-lg">
+          <div className="w-24 h-24 rounded-full bg-slate-800 mb-4 overflow-hidden border-2 border-slate-700 shadow-lg">
             <img
-              src="/foto-barberia-big-boss.jpg"
+              src="Foto_portada_dani.jpeg"
               alt="Logo"
               className="w-full h-full object-cover grayscale contrast-125"
             />
           </div>
           {/* CAMBIADO A FONT-SANS */}
           <h1 className="text-2xl font-bold text-white tracking-wider font-sans">Big Boss BarberShop</h1>
-          
-          <div className="text-neutral-400 text-sm mt-2 flex items-start justify-center gap-1 max-w-[280px]">
+
+          <div className="text-slate-400 text-sm mt-2 flex items-start justify-center gap-1 max-w-[280px]">
             <MapPin size={16} className="mt-0.5 flex-shrink-0 text-red-600" />
-            <a 
-              href="https://www.google.com/maps/search/?api=1&query=Las+Tortolas+26,+La+Islita,+Isla+de+Maipo" 
-              target="_blank" 
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Las+Tortolas+26,+La+Islita,+Isla+de+Maipo"
+              target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white hover:underline transition-colors text-left leading-tight"
             >
@@ -206,17 +201,19 @@ export default function BookingSystem() {
             </a>
           </div>
 
-          <div className="flex items-center gap-1 mt-3 bg-neutral-950 border border-neutral-800 px-3 py-1 rounded-full">
+          <div className="flex items-center gap-1 mt-3 bg-slate-950 border border-slate-800 px-3 py-1 rounded-full">
             <Star size={12} className="text-amber-600 fill-amber-600" />
-            <span className="text-xs font-bold text-neutral-300">5.0 ESTRELLAS</span>
+            <span className="text-xs font-bold text-slate-300">5.0 ESTRELLAS</span>
           </div>
         </div>
       </div>
 
-      {/* --- CARRUSEL AUTOMÁTICO (Con Pausa Táctil) --- 
+        {/*---- BIOGRAFIA ----*/}
+
+      {/* --- CARRUSEL AUTOMÁTICO (Con Pausa Táctil) --- */}
       <div className="mt-8 pl-4">
-        <h3 className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
-          <ImageIcon size={12}/> Estilos Recientes
+        <h3 className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
+          <ImageIcon size={12}/> Cortes Recientes
         </h3>
         
         <div 
@@ -230,7 +227,7 @@ export default function BookingSystem() {
           {GALLERY_IMAGES.map((img, index) => (
             <div 
               key={index} 
-              className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-neutral-800 shadow-lg relative group cursor-pointer transition-all duration-500 hover:border-amber-700/50 hover:shadow-amber-900/20 hover:shadow-2xl"
+              className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-slate-800 shadow-lg relative group cursor-pointer transition-all duration-500 hover:border-amber-700/50 hover:shadow-amber-900/20 hover:shadow-2xl"
             >
               <img 
                 src={img} 
@@ -249,16 +246,16 @@ export default function BookingSystem() {
             </div>
           ))}
         </div>
-      </div>*/}
+      </div>
 
       {/* TARJETAS SERVICIOS */}
       <div className="px-4 mt-2 space-y-3 relative z-10">
-        <h3 className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
-          <Scissors size={12}/> Servicios
+        <h3 className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
+          <Scissors size={12} /> Servicios
         </h3>
 
         {/* Servicio 1 - CAMBIADO A FONT-SANS */}
-        <div className="bg-neutral-900 p-4 rounded-xl shadow-lg border border-neutral-800 flex justify-between items-center group hover:border-neutral-600 transition-colors">
+        <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800 flex justify-between items-center group hover:border-slate-600 transition-colors">
           <div>
             <h3 className="font-bold text-gray-100">Corte de Pelo</h3>
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
@@ -271,8 +268,8 @@ export default function BookingSystem() {
         </div>
 
         {/* Servicio 2 - CAMBIADO A FONT-SANS */}
-        <div className="bg-neutral-900 p-4 rounded-xl shadow-lg border border-neutral-800 flex justify-between items-center group hover:border-neutral-600 transition-colors">
-           <div>
+        <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800 flex justify-between items-center group hover:border-slate-600 transition-colors">
+          <div>
             <h3 className="font-bold text-gray-100">Barba</h3>
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
               <Clock size={12} /> 15 minutos • Perfilado
@@ -284,8 +281,8 @@ export default function BookingSystem() {
         </div>
 
         {/* Servicio 3 - CAMBIADO A FONT-SANS */}
-        <div className="bg-neutral-900 p-4 rounded-xl shadow-lg border border-neutral-800 flex justify-between items-center group hover:border-neutral-600 transition-colors">
-           <div>
+        <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800 flex justify-between items-center group hover:border-slate-600 transition-colors">
+          <div>
             <h3 className="font-bold text-gray-100">Cejas</h3>
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
               <Clock size={12} /> 15 minutos • Perfilado
@@ -305,14 +302,14 @@ export default function BookingSystem() {
             </p>
           </div>
           <div className="bg-amber-900/40 text-amber-500 border border-amber-900/50 px-3 py-1 rounded text-sm font-bold">
-             +$3.000
+            +$3.000
           </div>
         </div>
       </div>
 
       {/* CALENDARIO */}
       <div className="mt-10 px-4">
-        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-4 pl-1">Selecciona el día</h3>
+        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 pl-1">Selecciona el día</h3>
         <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
           {days.map((day) => {
             const isSelected = isSameDay(day, selectedDate);
@@ -322,9 +319,9 @@ export default function BookingSystem() {
                 onClick={() => setSelectedDate(day)}
                 className={`
                   flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-lg border transition-all duration-300
-                  ${isSelected 
-                    ? 'bg-neutral-200 text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.1)] scale-105' 
-                    : 'bg-neutral-900 text-neutral-600 border-neutral-800 hover:border-neutral-600 hover:text-neutral-400'
+                  ${isSelected
+                    ? 'bg-slate-200 text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.1)] scale-105'
+                    : 'bg-slate-900 text-slate-600 border-slate-800 hover:border-slate-600 hover:text-slate-400'
                   }
                 `}
               >
@@ -339,11 +336,11 @@ export default function BookingSystem() {
 
       {/* GRILLA HORARIOS */}
       <div className="px-4 mt-4">
-        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-4 pl-1">
+        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 pl-1">
           Horarios ({format(selectedDate, 'EEEE d', { locale: es })})
         </h3>
 
-        {loading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-neutral-600" /></div> :
+        {loading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-slate-600" /></div> :
           isDayBlocked ? (
             <div className="bg-red-950/20 border border-red-900/30 rounded-xl p-8 text-center animate-in fade-in">
               <CalendarX className="mx-auto text-red-800 mb-3" size={32} />
@@ -369,10 +366,10 @@ export default function BookingSystem() {
                     className={`
                     py-3 rounded-lg font-bold text-xs sm:text-sm transition-all border relative flex flex-col items-center justify-center gap-1
                     ${isDisabled
-                        ? 'bg-neutral-950 text-neutral-800 border-transparent cursor-not-allowed opacity-50'
+                        ? 'bg-slate-950 text-slate-800 border-transparent cursor-not-allowed opacity-50'
                         : isOvertime
                           ? 'bg-amber-950/20 text-amber-600 border-amber-900/30 hover:bg-amber-900/40 hover:border-amber-700'
-                          : 'bg-neutral-800 text-neutral-300 border-neutral-700 hover:bg-neutral-200 hover:text-black hover:border-white'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-200 hover:text-black hover:border-white'
                       }
                   `}
                   >
@@ -387,12 +384,12 @@ export default function BookingSystem() {
           )}
       </div>
 
-      <div className="text-center mt-12 text-neutral-700 text-[10px] uppercase tracking-widest pb-10">By order of Big Boss Barber</div>
+      <div className="text-center mt-12 text-slate-700 text-[10px] uppercase tracking-widest pb-10">By order of Big Boss Barber</div>
 
       {/* MODAL PRINCIPAL */}
       {selectedSlot && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-neutral-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-neutral-800 animate-in slide-in-from-bottom-10">
+          <div className="bg-slate-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-slate-800 animate-in slide-in-from-bottom-10">
 
             {/* --- ESCENARIO 1: ÉXITO --- */}
             {bookingSuccess ? (
@@ -401,18 +398,18 @@ export default function BookingSystem() {
                   <MessageCircle className="text-emerald-500" size={32} />
                 </div>
                 <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-wide">Cita Reservada</h3>
-                <p className="text-neutral-400 text-sm mb-8 px-4">
+                <p className="text-slate-400 text-sm mb-8 px-4">
                   El trato está hecho. Ahora confirma con Daniel por WhatsApp.
                 </p>
                 <button
                   onClick={openWhatsApp}
                   className="w-full bg-emerald-700 text-white font-bold py-4 rounded-lg text-sm uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-[0_0_20px_rgba(4,120,87,0.2)] flex items-center justify-center gap-2"
                 >
-                  Confirmar <ChevronRight size={16}/>
+                  Confirmar <ChevronRight size={16} />
                 </button>
-                <button 
+                <button
                   onClick={() => setSelectedSlot(null)}
-                  className="mt-6 text-neutral-600 text-xs hover:text-white uppercase tracking-widest"
+                  className="mt-6 text-slate-600 text-xs hover:text-white uppercase tracking-widest"
                 >
                   Cerrar
                 </button>
@@ -422,33 +419,33 @@ export default function BookingSystem() {
               <>
                 {!showOvertimeWarning && (
                   <>
-                    <div className="flex justify-between items-start mb-8 border-b border-neutral-800 pb-4">
+                    <div className="flex justify-between items-start mb-8 border-b border-slate-800 pb-4">
                       <div>
-                        <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-1">Nueva Reserva</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Nueva Reserva</p>
                         {/* CAMBIADO A FONT-SANS */}
                         <h3 className="text-3xl font-black text-white flex items-center gap-2 font-sans">
                           {selectedSlot}
                           {OVERTIME_SLOTS.includes(selectedSlot) && <span className="text-[10px] bg-amber-900/40 text-amber-500 border border-amber-900 px-2 py-1 rounded ml-2 font-sans tracking-wide">EXTRA</span>}
                         </h3>
-                        <p className="text-sm text-neutral-400 capitalize mt-1">{format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</p>
+                        <p className="text-sm text-slate-400 capitalize mt-1">{format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</p>
                       </div>
-                      <button onClick={() => setSelectedSlot(null)} className="text-neutral-500 hover:text-white transition-colors"><X size={24} /></button>
+                      <button onClick={() => setSelectedSlot(null)} className="text-slate-500 hover:text-white transition-colors"><X size={24} /></button>
                     </div>
 
                     <form onSubmit={handleInitialSubmit} className="space-y-5">
                       {/* Input Nombre */}
-                      <div className={`bg-neutral-950 p-4 rounded-lg border transition-all ${errors.name ? 'border-red-900' : 'border-neutral-800 focus-within:border-white'}`}>
-                        <label className="text-[10px] text-neutral-500 font-bold block mb-2 uppercase tracking-wider">Tu Nombre</label>
-                        <input autoFocus className="w-full bg-transparent outline-none font-bold text-lg text-white placeholder-neutral-700" placeholder="Ej: Thomas Shelby" value={clientName} onChange={handleNameChange} />
+                      <div className={`bg-slate-950 p-4 rounded-lg border transition-all ${errors.name ? 'border-red-900' : 'border-slate-800 focus-within:border-white'}`}>
+                        <label className="text-[10px] text-slate-500 font-bold block mb-2 uppercase tracking-wider">Tu Nombre</label>
+                        <input autoFocus className="w-full bg-transparent outline-none font-bold text-lg text-white placeholder-slate-700" placeholder="Ej: Thomas Shelby" value={clientName} onChange={handleNameChange} />
                         {errors.name && <p className="text-xs text-red-500 mt-2 flex items-center gap-1">{errors.name}</p>}
                       </div>
 
                       {/* Input Teléfono */}
-                      <div className={`bg-neutral-950 p-4 rounded-lg border transition-all ${errors.phone ? 'border-red-900' : 'border-neutral-800 focus-within:border-white'}`}>
-                        <label className="text-[10px] text-neutral-500 font-bold block mb-2 uppercase tracking-wider">WhatsApp</label>
+                      <div className={`bg-slate-950 p-4 rounded-lg border transition-all ${errors.phone ? 'border-red-900' : 'border-slate-800 focus-within:border-white'}`}>
+                        <label className="text-[10px] text-slate-500 font-bold block mb-2 uppercase tracking-wider">WhatsApp</label>
                         <div className="flex items-center gap-3">
-                          <span className="text-neutral-500 font-bold text-lg">+56</span>
-                          <input type="tel" className="w-full bg-transparent outline-none font-bold text-lg text-white placeholder-neutral-700" placeholder="9 1234 5678" value={clientPhone} onChange={handlePhoneChange} />
+                          <span className="text-slate-500 font-bold text-lg">+56</span>
+                          <input type="tel" className="w-full bg-transparent outline-none font-bold text-lg text-white placeholder-slate-700" placeholder="9 1234 5678" value={clientPhone} onChange={handlePhoneChange} />
                         </div>
                         {errors.phone && <p className="text-xs text-red-500 mt-2 flex items-center gap-1">{errors.phone}</p>}
                       </div>
@@ -456,9 +453,9 @@ export default function BookingSystem() {
                       {/* Botón Principal */}
                       <button
                         disabled={processing || !clientName || !clientPhone}
-                        className="w-full bg-neutral-200 text-black font-black py-4 rounded-lg text-sm uppercase tracking-widest hover:bg-white hover:scale-[1.01] active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-30 disabled:scale-100 mt-6"
+                        className="w-full bg-slate-200 text-black font-black py-4 rounded-lg text-sm uppercase tracking-widest hover:bg-white hover:scale-[1.01] active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-30 disabled:scale-100 mt-6"
                       >
-                        {processing ? <Loader2 className="animate-spin"/> : "Confirmar"}
+                        {processing ? <Loader2 className="animate-spin" /> : "Confirmar"}
                       </button>
                     </form>
                   </>
@@ -472,23 +469,23 @@ export default function BookingSystem() {
                     </div>
                     {/* CAMBIADO A FONT-SANS */}
                     <h3 className="text-xl font-bold text-white mb-2 font-sans uppercase tracking-wide">Tarifa Especial</h3>
-                    
-                    <div className="bg-neutral-950 p-5 rounded-lg text-left mb-8 border border-neutral-800">
-                      <div className="flex justify-between items-center text-sm mb-3 text-neutral-400">
+
+                    <div className="bg-slate-950 p-5 rounded-lg text-left mb-8 border border-slate-800">
+                      <div className="flex justify-between items-center text-sm mb-3 text-slate-400">
                         <span>Corte Base</span><span>${BASE_PRICE.toLocaleString('es-CL')}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm mb-4 text-amber-600 font-bold">
                         <span>Horario Extra</span><span>+${EXTRA_FEE.toLocaleString('es-CL')}</span>
                       </div>
-                      <div className="border-t border-neutral-800 pt-3 flex justify-between items-center font-black text-xl text-white">
+                      <div className="border-t border-slate-800 pt-3 flex justify-between items-center font-black text-xl text-white">
                         <span>Total</span><span>${(BASE_PRICE + EXTRA_FEE).toLocaleString('es-CL')}</span>
                       </div>
                     </div>
 
                     <div className="flex gap-3">
-                      <button onClick={() => setShowOvertimeWarning(false)} className="flex-1 py-3 text-neutral-500 font-bold hover:text-white uppercase text-xs tracking-widest">Volver</button>
+                      <button onClick={() => setShowOvertimeWarning(false)} className="flex-1 py-3 text-slate-500 font-bold hover:text-white uppercase text-xs tracking-widest">Volver</button>
                       <button onClick={executeBooking} className="flex-1 bg-amber-700 text-white font-bold py-3 rounded-lg hover:bg-amber-600 shadow-lg text-xs uppercase tracking-widest">
-                        {processing ? <Loader2 className="animate-spin inline"/> : "Aceptar"}
+                        {processing ? <Loader2 className="animate-spin inline" /> : "Aceptar"}
                       </button>
                     </div>
                   </div>
