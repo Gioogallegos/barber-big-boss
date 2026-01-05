@@ -205,11 +205,29 @@ export default function BookingSystem() {
             <Star size={12} className="text-amber-600 fill-amber-600" />
             <span className="text-xs font-bold text-slate-300">5.0 ESTRELLAS</span>
           </div>
+ {/* --- BIOGRAFÍA AGREGADA */}
+          <div className="mt-8 max-w-xs animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="relative bg-slate-950/40 p-5 rounded-xl border border-slate-800/50 backdrop-blur-sm shadow-inner">
+               {/* Icono de Cita Manual SVG */}
+               <svg className="absolute -top-3 left-3 text-amber-700/40 fill-amber-900/20 w-6 h-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+                  <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+               </svg>
+               
+               <p className="text-xs text-slate-400 text-justify leading-relaxed font-light pt-2">
+                 <span className="font-bold text-slate-200">Daniel Barrera</span>, profesional en barbería con estudios en Mario Mezza y participación en exposiciones como <span className="italic text-slate-300">“Expresión”</span> (liderado por Ema Medina, Andrea Migheti y Guille Larrosa).
+                 <br/><br/>
+                 Con 3 años de experiencia, en <span className="text-amber-600 font-bold tracking-wide">Big Boss</span> busco más que vender un corte: es dar una grata atención y hacerlos sentir cómodos a través de mi servicio. Queremos potenciar el atractivo del cliente, crear imágenes únicas y en un futuro formar profesionales del rubro.
+               </p>
+               
+               <div className="w-8 h-1 bg-amber-800/30 mx-auto mt-4 rounded-full"></div>
+            </div>
+          </div>
+          {/* ------------------------- */}
         </div>
       </div>
 
-      {/*---- BIOGRAFIA ----*/}
-
+      {/* CARRUSEL DE IMÁGENES */}
       <div className="mt-6 pl-2 relative z-10">
         <h3 className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2 pl-2">
           <ImageIcon size={12} /> Estilos Recientes
