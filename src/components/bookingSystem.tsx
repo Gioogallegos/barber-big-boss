@@ -395,7 +395,7 @@ export default function BookingSystem() {
                   >
                     {time}
                     {isOvertime && !isDisabled && (
-                      <span className="text-[8px] font-black uppercase tracking-wide text-amber-700">Extra</span>
+                      <span className="text-[8px] font-black uppercase tracking-wide text-amber-700">Sobrecupo</span>
                     )}
                   </button>
                 );
