@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import { deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
-// Tus imports locales se mantienen intactos
 import { auth, db } from '@/src/lib/firebase';
 import { useAppointments } from '@/src/hooks/useAppointments';
 import { toast } from 'sonner';
@@ -25,7 +24,7 @@ export default function AdminPage() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // --- ESTADO PARA EL TEMA (Light / Dark) ---
-  const [isDarkMode, setIsDarkMode] = useState(false); // Por defecto claro, cambiar a true si prefieres oscuro por defecto
+  const [isDarkMode, setIsDarkMode] = useState(true); // Por defecto claro, cambiar a true si prefieres oscuro por defecto
   // ------------------------------------------
 
   const [date, setDate] = useState(new Date());
