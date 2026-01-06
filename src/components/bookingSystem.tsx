@@ -27,6 +27,8 @@ const OVERTIME_SLOTS = ['08:00', '09:00', '20:00', '21:00'];
 const BASE_PRICE = 10000;
 const EXTRA_FEE = 3000;
 
+
+
 const getNextDays = () => {
   const days = [];
   const today = new Date();
@@ -183,11 +185,11 @@ export default function BookingSystem() {
             <img
               src="Foto_portada_dani.jpeg"
               alt="Logo"
-              className="w-full h-full object-cover grayscale contrast-125"
+              className="w-full h-full object-cover"
             />
           </div>
           {/* CAMBIADO A FONT-SANS */}
-          <h1 className="text-2xl font-bold text-white tracking-wider font-sans">Big Boss BarberShop</h1>
+          <h1 className="text-2xl font-bold text-white tracking-wider font-sans">The Big Boss BarberShop</h1>
 
           <div className="text-slate-400 text-sm mt-2 flex items-start justify-center gap-1 max-w-[280px]">
             <MapPin size={16} className="mt-0.5 flex-shrink-0 text-red-600" />
@@ -217,7 +219,7 @@ export default function BookingSystem() {
                <p className="text-xs text-slate-400 text-justify leading-relaxed font-light pt-2">
                  <span className="font-bold text-slate-200">Daniel Barrera</span>, profesional en barbería con estudios en Mario Mezza y participación en exposiciones como <span className="italic text-slate-300">“Expresión”</span> (liderado por Ema Medina, Andrea Migheti y Guille Larrosa).
                  <br/><br/>
-                 Con 3 años de experiencia, en <span className="text-amber-600 font-bold tracking-wide">Big Boss</span> busco más que vender un corte: es dar una grata atención y hacerlos sentir cómodos a través de mi servicio. Queremos potenciar el atractivo del cliente, crear imágenes únicas y en un futuro formar profesionales del rubro.
+                 Con 3 años de experiencia, en <span className="text-amber-600 font-bold tracking-wide">The Big Boss</span> busco más que vender un corte: es dar una grata atención y hacerlos sentir cómodos a través de mi servicio. Queremos potenciar el atractivo del cliente, crear imágenes únicas y en un futuro formar profesionales del rubro.
                </p>
                
                <div className="w-8 h-1 bg-amber-800/30 mx-auto mt-4 rounded-full"></div>
