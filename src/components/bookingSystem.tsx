@@ -1,520 +1,476 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
-import { runTransaction, doc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { useAppointments } from '../hooks/useAppointments';
+import React, { useState, useEffect } from 'react';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '@/src/lib/firebase';
+import { useAppointments } from '@/src/hooks/useAppointments';
 import { toast } from 'sonner';
-import { Loader2, X, MapPin, Clock, ChevronRight, Star, CalendarX, AlertTriangle, MessageCircle, Scissors, Image as ImageIcon, ZoomIn } from 'lucide-react';
-import { format, addDays, isSameDay } from 'date-fns';
+// Agregamos Sun y Moon para el botón de cambio de tema
+import { Trash2, LogOut, User, Phone, Edit2, X, Ban, CheckCircle, History, ChevronLeft, ChevronRight, PlusCircle, UserCheck, Save, Loader2, Sun, Moon } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-// --- CONFIGURACIÓN ---
-const BARBER_PHONE = "56988280660";
-
-// FOTOS DEL CARRUSEL
-const GALLERY_IMAGES = ["corte 1.jpeg", "corte 2.jpeg", "corte 3.jpeg",
-  "corte 4.jpeg", "corte 5.jpeg", "corte 6.jpeg"];
-
-const HOURS = [
-  '08:00', '09:00',
-  '10:00', '11:00', '12:00', '13:00',
+const HOURS: string[] = [
+  '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
   '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
   '20:00', '21:00'
 ];
 
-const OVERTIME_SLOTS = ['08:00', '09:00', '20:00', '21:00'];
-const BASE_PRICE = 10000;
-const EXTRA_FEE = 3000;
+export default function AdminPage() {
+  const [user, setUser] = useState<any>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
+  // --- ESTADO PARA EL TEMA (Light / Dark) ---
+  const [isDarkMode, setIsDarkMode] = useState(true); // Por defecto claro, cambiar a true si prefieres oscuro por defecto
+  // ------------------------------------------
 
+  const [date, setDate] = useState(new Date());
 
-const getNextDays = () => {
-  const days = [];
-  const today = new Date();
-  for (let i = 0; i < 14; i++) {
-    days.push(addDays(today, i));
-  }
-  return days;
-};
+  // NAVEGACIÓN SEMANAL
+  const [viewWeekStart, setViewWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
-export default function BookingSystem() {
-  const [isMounted, setIsMounted] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const { appointments, loading } = useAppointments(selectedDate);
-  const days = getNextDays();
+  const { appointments, loading } = useAppointments(date);
+  const [editingApp, setEditingApp] = useState<any>(null);
 
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [clientName, setClientName] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
-  const [processing, setProcessing] = useState(false);
-  const [errors, setErrors] = useState({ name: '', phone: '' });
-  const [showOvertimeWarning, setShowOvertimeWarning] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
+  // --- NUEVOS ESTADOS PARA AGREGAR MANUALMENTE ---
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newApp, setNewApp] = useState({ time: '', name: '', phone: '' });
 
-  // Referencia para el carrusel automático
-  const scrollRef = useRef<HTMLDivElement>(null);
-  // Estado para pausar el carrusel si el usuario interactúa
-  const [isPaused, setIsPaused] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const isDayBlocked = appointments.some(app => (app as any).type === 'day_blocked');
 
-  useEffect(() => { setIsMounted(true); }, []);
-
-  // EFECTO PARA AUTO-SCROLL DEL CARRUSEL
   useEffect(() => {
-    if (isPaused) return;
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoadingAuth(false);
+    });
+    return () => unsub();
+  }, []);
 
-    const interval = setInterval(() => {
-      if (scrollRef.current) {
-        const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-        const isEnd = scrollLeft + clientWidth >= scrollWidth - 10;
-
-        if (isEnd) {
-          scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          scrollRef.current.scrollBy({ left: 176, behavior: 'smooth' });
-        }
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [isPaused]);
-
-  const openBookingModal = (time: string) => {
-    setSelectedSlot(time);
-    setClientName('');
-    setClientPhone('');
-    setErrors({ name: '', phone: '' });
-    setShowOvertimeWarning(false);
-    setBookingSuccess(false);
-  };
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    if (val === '' || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val)) {
-      if (val.length <= 20) {
-        setClientName(val.replace(/\b\w/g, l => l.toUpperCase()));
-        setErrors(prev => ({ ...prev, name: '' }));
-      }
-    }
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/[^0-9]/g, '');
-    if (val.length <= 9) {
-      setClientPhone(val);
-      setErrors(prev => ({ ...prev, phone: '' }));
-    }
-  };
-
-  const handleInitialSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    let hasError = false;
-    const newErrors = { name: '', phone: '' };
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Bienvenido Jefe");
+    } catch (error) { toast.error("Credenciales incorrectas"); }
+  };
 
-    if (clientName.trim().length < 3) { newErrors.name = 'Mínimo 3 letras'; hasError = true; }
-    if (clientPhone.length < 8) { newErrors.phone = 'Mínimo 8 números'; hasError = true; }
+  const handleLogout = async () => { await signOut(auth); };
 
-    if (hasError) { setErrors(newErrors); return; }
+  // --- LOGICA DE NAVEGACIÓN ---
+  const weekDays = eachDayOfInterval({
+    start: viewWeekStart,
+    end: endOfWeek(viewWeekStart, { weekStartsOn: 1 })
+  });
 
-    if (selectedSlot && OVERTIME_SLOTS.includes(selectedSlot)) {
-      setShowOvertimeWarning(true);
-    } else {
-      executeBooking();
+  const nextWeek = () => setViewWeekStart(addWeeks(viewWeekStart, 1));
+  const prevWeek = () => setViewWeekStart(subWeeks(viewWeekStart, 1));
+  const selectDay = (day: Date) => {
+    setDate(day);
+    setShowHistory(false);
+  };
+
+  // --- ACCIONES ADMIN ---
+  const toggleBlockDay = async () => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const blockDocId = `${dateStr}-BLOCK`;
+    
+    try {
+      if (isDayBlocked) {
+        if (!confirm("¿Abrir agenda?")) return;
+        await deleteDoc(doc(db, "appointments", blockDocId));
+        toast.success("Abierto");
+      } else {
+        if (!confirm("¿Cerrar día?")) return;
+        await setDoc(doc(db, "appointments", blockDocId), {
+          date: dateStr,
+          type: 'day_blocked',
+          createdAt: new Date().toISOString()
+        });
+        toast.success("Cerrado");
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Error al cambiar estado");
     }
   };
 
-  const executeBooking = async () => {
-    if (!selectedSlot) return;
-    setProcessing(true);
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Eliminar?")) return;
+    try { await deleteDoc(doc(db, "appointments", id)); toast.success("Eliminado"); } catch (e) { toast.error("Error"); }
+  };
 
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const appointmentId = `${dateStr}-${selectedSlot}`;
-    const isOvertime = OVERTIME_SLOTS.includes(selectedSlot);
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingApp) return;
+    try {
+      await updateDoc(doc(db, "appointments", editingApp.id), { clientName: editingApp.clientName, clientPhone: editingApp.clientPhone });
+      toast.success("Actualizado");
+      setEditingApp(null);
+    } catch (error) { toast.error("Error"); }
+  };
+
+  const handleManualAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newApp.time || !newApp.name) {
+      toast.error("Faltan datos");
+      return;
+    }
+
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const appointmentId = `${dateStr}-${newApp.time}`;
+
+    const exists = appointments.some(app => (app as any).time === newApp.time && (app as any).type === 'booking');
+    if (exists) {
+      toast.error("Esa hora ya está reservada");
+      return;
+    }
 
     try {
-      await runTransaction(db, async (transaction) => {
-        const docRef = doc(db, "appointments", appointmentId);
-        const sfDoc = await transaction.get(docRef);
-        if (sfDoc.exists()) throw "¡Esta hora ya fue tomada!";
-
-        transaction.set(docRef, {
-          date: dateStr,
-          time: selectedSlot,
-          clientName: clientName.trim(),
-          clientPhone: clientPhone.trim(),
-          createdAt: new Date().toISOString(),
-          type: 'booking',
-          isOvertime: isOvertime
-        });
+      await setDoc(doc(db, "appointments", appointmentId), {
+        date: dateStr,
+        time: newApp.time,
+        clientName: newApp.name,
+        clientPhone: newApp.phone || 'Manual/Presencial',
+        type: 'booking',
+        isManual: true, 
+        createdAt: new Date().toISOString()
       });
-
-      toast.success("¡Reserva confirmada!");
-      setBookingSuccess(true);
-
-    } catch (error: any) {
-      toast.error(typeof error === 'string' ? error : "Error al reservar");
-    } finally {
-      setProcessing(false);
+      toast.success("Cliente agregado correctamente");
+      setShowAddModal(false);
+      setNewApp({ time: '', name: '', phone: '' });
+    } catch (error) {
+      toast.error("Error al guardar");
     }
   };
 
-  const openWhatsApp = () => {
-    if (!selectedSlot) return;
+  // --- LÓGICA FILTRADO ---
+  const now = new Date();
+  const isSelectedDateToday = isSameDay(date, now);
+  const currentHour = now.getHours();
 
-    const isOvertime = OVERTIME_SLOTS.includes(selectedSlot);
-    const fechaBonita = format(selectedDate, "EEEE d 'de' MMMM", { locale: es });
-    const totalPrice = isOvertime ? BASE_PRICE + EXTRA_FEE : BASE_PRICE;
-    const extraText = isOvertime ? ` *(Sobrecupo +$3.000)*` : "";
+  const bookingApps = appointments.filter(app => (app as any).type === 'booking');
 
-    const mensaje = `Hola Daniel! Soy *${clientName}*. Agendé para el *${fechaBonita}* a las *${selectedSlot}*${extraText}. Total: $${totalPrice.toLocaleString('es-CL')}. Mi número es ${clientPhone}.`;
+  const upcomingAppointments = bookingApps.filter(app => {
+    if (date > now && !isSelectedDateToday) return true;
+    if (date < now && !isSelectedDateToday) return false;
+    const [appHour] = (app as any).time.split(':').map(Number);
+    return appHour > currentHour;
+  }).sort((a: any, b: any) => a.time.localeCompare(b.time));
 
-    window.open(`https://wa.me/${BARBER_PHONE}?text=${encodeURIComponent(mensaje)}`, '_blank');
-  };
+  const pastAppointments = bookingApps.filter(app => {
+    if (date > now && !isSelectedDateToday) return false;
+    if (date < now && !isSelectedDateToday) return true;
+    const [appHour] = (app as any).time.split(':').map(Number);
+    return appHour <= currentHour;
+  }).sort((a: any, b: any) => b.time.localeCompare(a.time));
 
-  if (!isMounted) return <div className="h-screen flex items-center justify-center bg-slate-950"><Loader2 className="animate-spin text-slate-500" /></div>;
+
+  if (loadingAuth) return <div className="p-10 text-center animate-pulse flex justify-center h-screen items-center bg-slate-900"><Loader2 className="animate-spin text-slate-500"/></div>;
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4 font-sans">
+        <form onSubmit={handleLogin} className="bg-slate-900 p-8 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-800">
+          <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-200 border border-slate-700">
+             <UserCheck size={32}/>
+          </div>
+          <h1 className="text-2xl font-bold text-center mb-6 text-white tracking-wide">Acceso Admin</h1>
+          <input type="email" placeholder="Email" className="w-full bg-slate-950 border border-slate-800 text-white p-3 rounded-xl mb-3 focus:ring-1 focus:ring-slate-500 outline-none placeholder-slate-600" onChange={e => setEmail(e.target.value)} />
+          <input type="password" placeholder="Contraseña" className="w-full bg-slate-950 border border-slate-800 text-white p-3 rounded-xl mb-6 focus:ring-1 focus:ring-slate-500 outline-none placeholder-slate-600" onChange={e => setPassword(e.target.value)} />
+          <button className="w-full bg-slate-200 text-slate-900 font-bold py-4 rounded-xl hover:bg-white transition shadow-lg uppercase tracking-wider">Entrar</button>
+        </form>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-md mx-auto bg-slate-950 min-h-screen pb-20 font-sans text-slate-200">
-
-      {/* HEADER */}
-      <div className="bg-slate-900 p-6 pb-8 rounded-b-3xl shadow-2xl shadow-black border-b border-slate-800">
-        <div className="flex flex-col items-center text-center">
-          <div className="w-24 h-24 rounded-full bg-slate-800 mb-4 overflow-hidden border-2 border-slate-700 shadow-lg">
-            <img
-              src="Foto_portada_dani.jpeg"
-              alt="Logo"
-              className="w-full h-full object-cover"
-            />
+    // CAMBIO: Clases dinámicas en el contenedor principal
+    <div className={`min-h-screen font-sans pb-20 transition-colors duration-300 ${isDarkMode ? 'bg-slate-950 text-slate-200' : 'bg-slate-50 text-slate-900'}`}>
+      <div className="max-w-md mx-auto">
+        
+        {/* HEADER */}
+        <div className={`p-4 shadow-sm border-b flex justify-between items-center sticky top-0 z-10 transition-colors ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+          <div>
+            <h1 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Barber Admin</h1>
+            <p className="text-xs text-slate-400 capitalize">{format(date, "EEEE d 'de' MMMM", { locale: es })}</p>
           </div>
-          {/* CAMBIADO A FONT-SANS */}
-          <h1 className="text-2xl font-bold text-white tracking-wider font-sans">The Big Boss BarberShop</h1>
-
-          <div className="text-slate-400 text-sm mt-2 flex items-start justify-center gap-1 max-w-[280px]">
-            <MapPin size={16} className="mt-0.5 flex-shrink-0 text-red-600" />
-            <a
-              href="https://www.google.com/maps/search/?api=1&query=Las+Tortolas+26,+La+Islita,+Isla+de+Maipo"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-white hover:underline transition-colors text-left leading-tight"
+          
+          <div className="flex gap-2">
+            {/* BOTÓN CAMBIO DE TEMA */}
+            <button 
+              onClick={() => setIsDarkMode(!isDarkMode)} 
+              className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 text-amber-500 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             >
-              Las Tortolas 26, La Islita, Isla de Maipo (Ver mapa)
-            </a>
-          </div>
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
 
-          <div className="flex items-center gap-1 mt-3 bg-slate-950 border border-slate-800 px-3 py-1 rounded-full">
-            <Star size={12} className="text-amber-600 fill-amber-600" />
-            <span className="text-xs font-bold text-slate-300">5.0 ESTRELLAS</span>
-          </div>
- {/* --- BIOGRAFÍA AGREGADA */}
-          <div className="mt-8 max-w-xs animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="relative bg-slate-950/40 p-5 rounded-xl border border-slate-800/50 backdrop-blur-sm shadow-inner">
-               {/* Icono de Cita Manual SVG */}
-               <svg className="absolute -top-3 left-3 text-amber-700/40 fill-amber-900/20 w-6 h-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
-                  <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
-               </svg>
-               
-               <p className="text-xs text-slate-400 text-justify leading-relaxed font-light pt-2">
-                 <span className="font-bold text-slate-200">Daniel Barrera</span>, profesional en barbería con estudios en Mario Mezza y participación en exposiciones como <span className="italic text-slate-300">“Expresión”</span> (liderado por Ema Medina, Andrea Migheti y Guille Larrosa).
-                 <br/><br/>
-                 Con 3 años de experiencia, en <span className="text-amber-600 font-bold tracking-wide">The Big Boss</span> busco más que vender un corte: es dar una grata atención y hacerlos sentir cómodos a través de mi servicio. Queremos potenciar el atractivo del cliente, crear imágenes únicas y en un futuro formar profesionales del rubro.
-               </p>
-               
-               <div className="w-8 h-1 bg-amber-800/30 mx-auto mt-4 rounded-full"></div>
-            </div>
-          </div>
-          {/* ------------------------- */}
-        </div>
-      </div>
-
-      {/* CARRUSEL DE IMÁGENES */}
-      <div className="mt-6 pl-2 relative z-10">
-        <h3 className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2 pl-2">
-          <ImageIcon size={12} /> Estilos Recientes
-        </h3>
-
-        <div
-          ref={scrollRef}
-          // Eliminado touch-pan-x para permitir scroll vertical en móvil
-          className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide pr-4 snap-x"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-          onTouchStart={() => setIsPaused(true)}
-          onTouchEnd={() => setIsPaused(false)}
-        >
-          {GALLERY_IMAGES.map((img, index) => (
-            <div
-              key={index}
-              // Se agregó 'active:' para feedback en móvil
-              className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-slate-800 shadow-lg relative group cursor-pointer transition-all duration-500 hover:border-amber-700/50 hover:shadow-amber-900/20 active:border-amber-700 active:shadow-amber-900/40 active:scale-95"
+            <button 
+              onClick={handleLogout} 
+              className={`p-2 rounded-lg transition-colors text-slate-400 hover:text-red-500 ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-50 hover:bg-slate-100'}`}
             >
-              <img
-                src={img}
-                alt={`Corte ${index + 1}`}
-                // AQUÍ EL CAMBIO CLAVE: group-active:grayscale-0
-                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-active:grayscale-0 group-hover:scale-110 group-active:scale-110 transition-all duration-700 ease-out"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-500 delay-100">
-                <ZoomIn size={16} className="text-white/80" />
-              </div>
-              <div className="absolute bottom-3 left-0 right-0 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 border-b border-amber-500/0 group-hover:border-amber-500 pb-0.5">
-                  Estilo {index + 1}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* TARJETAS SERVICIOS */}
-      <div className="px-4 mt-2 space-y-3 relative z-10">
-        <h3 className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
-          <Scissors size={12} /> Servicios
-        </h3>
-
-        {/* Servicio 1 - CAMBIADO A FONT-SANS */}
-        <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800 flex justify-between items-center group hover:border-slate-600 transition-colors">
-          <div>
-            <h3 className="font-bold text-gray-100">Corte de Pelo</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 1 hora • Corte & Estilo
-            </p>
-          </div>
-          <div className="bg-emerald-950 border border-emerald-900 text-emerald-100 px-3 py-1 rounded text-sm font-bold shadow-inner">
-            $10.000
+              <LogOut size={20}/>
+            </button>
           </div>
         </div>
-
-        {/* Servicio 2 - CAMBIADO A FONT-SANS */}
-        <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800 flex justify-between items-center group hover:border-slate-600 transition-colors">
-          <div>
-            <h3 className="font-bold text-gray-100">Barba</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 15 minutos • Perfilado
-            </p>
+        
+        {/* NAVEGACIÓN SEMANAL */}
+        <div className={`pb-4 shadow-sm mb-4 transition-colors ${isDarkMode ? 'bg-slate-900 border-b border-slate-800 shadow-md' : 'bg-white'}`}>
+          <div className="flex justify-between items-center px-4 py-2 mb-2">
+            <button onClick={prevWeek} className={`p-1 rounded-full ${isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-600'}`}><ChevronLeft size={20}/></button>
+            <span className={`text-sm font-bold capitalize ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+              {format(viewWeekStart, 'MMMM yyyy', { locale: es })}
+            </span>
+            <button onClick={nextWeek} className={`p-1 rounded-full ${isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-600'}`}><ChevronRight size={20}/></button>
           </div>
-          <div className="bg-emerald-950 border border-emerald-900 text-emerald-100 px-3 py-1 rounded text-sm font-bold shadow-inner">
-            +$4.000
-          </div>
-        </div>
 
-        {/* Servicio 3 - CAMBIADO A FONT-SANS */}
-        <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800 flex justify-between items-center group hover:border-slate-600 transition-colors">
-          <div>
-            <h3 className="font-bold text-gray-100">Cejas</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 15 minutos • Perfilado
-            </p>
-          </div>
-          <div className="bg-emerald-950 border border-emerald-900 text-emerald-100 px-3 py-1 rounded text-sm font-bold shadow-inner">
-            +$1.000
-          </div>
-        </div>
+          <div className="flex justify-between px-2 gap-1 overflow-x-auto scrollbar-hide">
+            {weekDays.map((day) => {
+              const isSelected = isSameDay(day, date);
+              const isTodayDay = isToday(day);
 
-        {/* Sobrecupo - CAMBIADO A FONT-SANS */}
-        <div className="bg-amber-950/20 p-4 rounded-xl shadow-sm border border-amber-900/30 flex justify-between items-center">
-          <div>
-            <h3 className="font-bold text-amber-600 uppercase text-xs tracking-wider font-sans">Sobrecupo (08-09 / 20-21 hrs)</h3>
-            <p className="text-[10px] text-amber-700/80 mt-1 flex items-center gap-1">
-              <AlertTriangle size={10} /> Horario extendido
-            </p>
-          </div>
-          <div className="bg-amber-900/40 text-amber-500 border border-amber-900/50 px-3 py-1 rounded text-sm font-bold">
-            +$3.000
-          </div>
-        </div>
-      </div>
-
-      {/* CALENDARIO */}
-      <div className="mt-10 px-4">
-        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 pl-1">Selecciona el día</h3>
-        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-          {days.map((day) => {
-            const isSelected = isSameDay(day, selectedDate);
-            return (
-              <button
-                key={day.toISOString()}
-                onClick={() => setSelectedDate(day)}
-                className={`
-                  flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-lg border transition-all duration-300
-                  ${isSelected
-                    ? 'bg-slate-200 text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.1)] scale-105'
-                    : 'bg-slate-900 text-slate-600 border-slate-800 hover:border-slate-600 hover:text-slate-400'
-                  }
-                `}
-              >
-                <span className="text-[10px] uppercase font-bold tracking-wider">{format(day, 'EEE', { locale: es }).replace('.', '')}</span>
-                {/* CAMBIADO A FONT-SANS */}
-                <span className="text-lg font-semibold font-sans">{format(day, 'd')}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* GRILLA HORARIOS */}
-      <div className="px-4 mt-4">
-        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 pl-1">
-          Horarios ({format(selectedDate, 'EEEE d', { locale: es })})
-        </h3>
-
-        {loading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-slate-600" /></div> :
-          isDayBlocked ? (
-            <div className="bg-red-950/20 border border-red-900/30 rounded-xl p-8 text-center animate-in fade-in">
-              <CalendarX className="mx-auto text-red-800 mb-3" size={32} />
-              <h3 className="text-red-700 font-bold uppercase tracking-wider">Cerrado por hoy</h3>
-              <p className="text-red-900/50 text-xs mt-1">Por orden de los Peaky Blinders.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {HOURS.map((time) => {
-                const isTaken = appointments.some(app => app.time === time);
-                const now = new Date();
-                const isToday = isSameDay(selectedDate, now);
-                const [slotHour] = time.split(':').map(Number);
-                const isPast = isToday && slotHour <= now.getHours();
-                const isDisabled = isTaken || isPast;
-                const isOvertime = OVERTIME_SLOTS.includes(time);
-
-                return (
-                  <button
-                    key={time}
-                    disabled={isDisabled}
-                    onClick={() => openBookingModal(time)}
-                    className={`
-                    py-3 rounded-lg font-bold text-xs sm:text-sm transition-all border relative flex flex-col items-center justify-center gap-1
-                    ${isDisabled
-                        ? 'bg-slate-950 text-slate-800 border-transparent cursor-not-allowed opacity-50'
-                        : isOvertime
-                          ? 'bg-amber-950/20 text-amber-600 border-amber-900/30 hover:bg-amber-900/40 hover:border-amber-700'
-                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-200 hover:text-black hover:border-white'
-                      }
+              return (
+                <button
+                  key={day.toISOString()}
+                  onClick={() => selectDay(day)}
+                  className={`
+                    flex flex-col items-center justify-center p-2 rounded-xl min-w-[3rem] transition-all relative
+                    ${isSelected 
+                      ? (isDarkMode ? 'bg-slate-200 text-slate-950 shadow-md scale-105 z-10' : 'bg-black text-white shadow-md scale-105 z-10')
+                      : (isDarkMode ? 'bg-transparent text-slate-500 hover:bg-slate-800' : 'bg-transparent text-slate-500 hover:bg-slate-50')
+                    }
                   `}
-                  >
-                    {time}
-                    {isOvertime && !isDisabled && (
-                      <span className="text-[8px] font-black uppercase tracking-wide text-amber-700">Sobrecupo</span>
-                    )}
-                  </button>
-                );
-              })}
+                >
+                  <span className="text-[10px] uppercase font-bold mb-1 opacity-80">
+                    {format(day, 'EEE', { locale: es }).replace('.', '')}
+                  </span>
+                  <span className={`text-lg font-bold ${isTodayDay && !isSelected ? 'text-blue-600' : ''}`}>
+                    {format(day, 'd')}
+                  </span>
+                  {isTodayDay && (
+                    <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? (isDarkMode ? 'bg-slate-950' : 'bg-white') : 'bg-blue-600'}`}></span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="px-4">
+          
+          {!showHistory && (
+            <div className="flex gap-2 mb-4">
+               {/* BOTÓN AGREGAR (Color condicional) */}
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg text-xs sm:text-sm active:scale-95 transition-all ${isDarkMode ? 'bg-amber-700 text-white hover:bg-amber-600' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+              >
+                <PlusCircle size={18} /> AGREGAR CLIENTE
+              </button>
+
+               {/* BOTÓN CERRAR DÍA */}
+              <button 
+                onClick={toggleBlockDay}
+                className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm text-xs sm:text-sm transition-all border ${
+                  isDayBlocked 
+                    ? 'bg-red-50 text-red-600 border-red-200' // Igual en ambos para destacar peligro
+                    : (isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50')
+                }`}
+              >
+                {isDayBlocked ? <><CheckCircle size={18}/> ABRIR DÍA</> : <><Ban size={18}/> CERRAR DÍA</>}
+              </button>
             </div>
           )}
-      </div>
 
-      <div className="text-center mt-12 text-slate-700 text-[10px] uppercase tracking-widest pb-10">By order of Big Boss Barber</div>
+          {/* TABS */}
+          <div className={`flex p-1 rounded-xl shadow-sm mb-4 border transition-colors ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <button 
+              onClick={() => setShowHistory(false)}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${!showHistory ? (isDarkMode ? 'bg-slate-700 text-white shadow-sm' : 'bg-black text-white') : 'text-slate-400'}`}
+            >
+              Pendientes ({upcomingAppointments.length})
+            </button>
+            <button 
+              onClick={() => setShowHistory(true)}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${showHistory ? (isDarkMode ? 'bg-slate-700 text-white shadow-sm' : 'bg-black text-white') : 'text-slate-400'}`}
+            >
+              <History size={14}/> Historial ({pastAppointments.length})
+            </button>
+          </div>
 
-      {/* MODAL PRINCIPAL */}
-      {selectedSlot && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-slate-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-slate-800 animate-in slide-in-from-bottom-10">
-
-            {/* --- ESCENARIO 1: ÉXITO --- */}
-            {bookingSuccess ? (
-              <div className="text-center py-6">
-                <div className="w-20 h-20 bg-emerald-950/50 border border-emerald-900 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <MessageCircle className="text-emerald-500" size={32} />
-                </div>
-                <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-wide">Cita Reservada</h3>
-                <p className="text-slate-400 text-sm mb-8 px-4">
-                  El trato está hecho. Ahora confirma con Daniel por WhatsApp.
-                </p>
-                <button
-                  onClick={openWhatsApp}
-                  className="w-full bg-emerald-700 text-white font-bold py-4 rounded-lg text-sm uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-[0_0_20px_rgba(4,120,87,0.2)] flex items-center justify-center gap-2"
-                >
-                  Confirmar <ChevronRight size={16} />
-                </button>
-                <button
-                  onClick={() => setSelectedSlot(null)}
-                  className="mt-6 text-slate-600 text-xs hover:text-white uppercase tracking-widest"
-                >
-                  Cerrar
-                </button>
-              </div>
-            ) : (
-              /* --- ESCENARIO 2: FORMULARIO --- */
+          {/* LISTA RESERVAS */}
+          <div className="space-y-3 pb-10">
+            {loading && <p className="text-center py-10 text-slate-400 text-sm animate-pulse">Buscando citas...</p>}
+            
+            {/* VISTA PENDIENTES */}
+            {!showHistory && (
               <>
-                {!showOvertimeWarning && (
-                  <>
-                    <div className="flex justify-between items-start mb-8 border-b border-slate-800 pb-4">
-                      <div>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Nueva Reserva</p>
-                        {/* CAMBIADO A FONT-SANS */}
-                        <h3 className="text-3xl font-black text-white flex items-center gap-2 font-sans">
-                          {selectedSlot}
-                          {OVERTIME_SLOTS.includes(selectedSlot) && <span className="text-[10px] bg-amber-900/40 text-amber-500 border border-amber-900 px-2 py-1 rounded ml-2 font-sans tracking-wide">EXTRA</span>}
-                        </h3>
-                        <p className="text-sm text-slate-400 capitalize mt-1">{format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</p>
-                      </div>
-                      <button onClick={() => setSelectedSlot(null)} className="text-slate-500 hover:text-white transition-colors"><X size={24} /></button>
-                    </div>
-
-                    <form onSubmit={handleInitialSubmit} className="space-y-5">
-                      {/* Input Nombre */}
-                      <div className={`bg-slate-950 p-4 rounded-lg border transition-all ${errors.name ? 'border-red-900' : 'border-slate-800 focus-within:border-white'}`}>
-                        <label className="text-[10px] text-slate-500 font-bold block mb-2 uppercase tracking-wider">Tu Nombre</label>
-                        <input autoFocus className="w-full bg-transparent outline-none font-bold text-lg text-white placeholder-slate-700" placeholder="Ej: Thomas Shelby" value={clientName} onChange={handleNameChange} />
-                        {errors.name && <p className="text-xs text-red-500 mt-2 flex items-center gap-1">{errors.name}</p>}
-                      </div>
-
-                      {/* Input Teléfono */}
-                      <div className={`bg-slate-950 p-4 rounded-lg border transition-all ${errors.phone ? 'border-red-900' : 'border-slate-800 focus-within:border-white'}`}>
-                        <label className="text-[10px] text-slate-500 font-bold block mb-2 uppercase tracking-wider">WhatsApp</label>
-                        <div className="flex items-center gap-3">
-                          <span className="text-slate-500 font-bold text-lg">+56</span>
-                          <input type="tel" className="w-full bg-transparent outline-none font-bold text-lg text-white placeholder-slate-700" placeholder="9 1234 5678" value={clientPhone} onChange={handlePhoneChange} />
-                        </div>
-                        {errors.phone && <p className="text-xs text-red-500 mt-2 flex items-center gap-1">{errors.phone}</p>}
-                      </div>
-
-                      {/* Botón Principal */}
-                      <button
-                        disabled={processing || !clientName || !clientPhone}
-                        className="w-full bg-slate-200 text-black font-black py-4 rounded-lg text-sm uppercase tracking-widest hover:bg-white hover:scale-[1.01] active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-30 disabled:scale-100 mt-6"
-                      >
-                        {processing ? <Loader2 className="animate-spin" /> : "Confirmar"}
-                      </button>
-                    </form>
-                  </>
-                )}
-
-                {/* ADVERTENCIA SOBRECUPO */}
-                {showOvertimeWarning && (
-                  <div className="text-center animate-in slide-in-from-right-10 fade-in">
-                    <div className="w-16 h-16 bg-amber-900/20 border border-amber-900/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <AlertTriangle className="text-amber-600" size={32} />
-                    </div>
-                    {/* CAMBIADO A FONT-SANS */}
-                    <h3 className="text-xl font-bold text-white mb-2 font-sans uppercase tracking-wide">Tarifa Especial</h3>
-
-                    <div className="bg-slate-950 p-5 rounded-lg text-left mb-8 border border-slate-800">
-                      <div className="flex justify-between items-center text-sm mb-3 text-slate-400">
-                        <span>Corte Base</span><span>${BASE_PRICE.toLocaleString('es-CL')}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm mb-4 text-amber-600 font-bold">
-                        <span>Horario Extra</span><span>+${EXTRA_FEE.toLocaleString('es-CL')}</span>
-                      </div>
-                      <div className="border-t border-slate-800 pt-3 flex justify-between items-center font-black text-xl text-white">
-                        <span>Total</span><span>${(BASE_PRICE + EXTRA_FEE).toLocaleString('es-CL')}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button onClick={() => setShowOvertimeWarning(false)} className="flex-1 py-3 text-slate-500 font-bold hover:text-white uppercase text-xs tracking-widest">Volver</button>
-                      <button onClick={executeBooking} className="flex-1 bg-amber-700 text-white font-bold py-3 rounded-lg hover:bg-amber-600 shadow-lg text-xs uppercase tracking-widest">
-                        {processing ? <Loader2 className="animate-spin inline" /> : "Aceptar"}
-                      </button>
-                    </div>
+                {!loading && !isDayBlocked && upcomingAppointments.length === 0 && (
+                  <div className={`text-center py-12 rounded-xl border border-dashed opacity-60 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    <CheckCircle className={`mx-auto mb-2 ${isDarkMode ? 'text-slate-700' : 'text-slate-300'}`} size={32}/>
+                    <p className="text-slate-500 font-medium text-sm">Todo libre por hoy</p>
                   </div>
                 )}
+
+                {upcomingAppointments.map((app: any) => (
+                  <div key={app.id} className={`p-4 rounded-2xl shadow-sm border flex flex-col gap-3 transition-colors ${
+                    (app as any).isManual 
+                      ? (isDarkMode ? 'bg-blue-950/20 border-blue-900/30' : 'bg-blue-50/50 border-blue-100') // Estilo Manual
+                      : (isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100') // Estilo Normal
+                  }`}>
+                    <div className={`flex justify-between items-center border-b pb-2 ${isDarkMode ? 'border-slate-800' : 'border-slate-50'}`}>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{app.time}</span>
+                        
+                        {(app as any).isOvertime && (
+                          <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">SOBRECUPO</span>
+                        )}
+                        
+                        {(app as any).isManual && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 ${isDarkMode ? 'bg-blue-900/30 text-blue-400 border border-blue-900/50' : 'bg-blue-100 text-blue-800'}`}><UserCheck size={10}/> MANUAL</span>
+                        )}
+                        
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button onClick={() => setEditingApp(app)} className={`p-2 rounded-full transition ${isDarkMode ? 'bg-slate-800 text-slate-400 hover:bg-blue-900/50 hover:text-blue-400' : 'bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-600'}`}><Edit2 size={16}/></button>
+                        <button onClick={() => handleDelete(app.id)} className={`p-2 rounded-full transition ${isDarkMode ? 'bg-slate-800 text-slate-400 hover:bg-red-900/50 hover:text-red-400' : 'bg-slate-50 text-slate-600 hover:bg-red-50 hover:text-red-600'}`}><Trash2 size={16}/></button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-1 px-1">
+                      <div className="flex items-center gap-2">
+                        <User size={14} className={isDarkMode ? 'text-slate-500' : 'text-slate-400'} />
+                        <span className={`font-bold text-base ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{app.clientName}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone size={14} className={isDarkMode ? 'text-slate-500' : 'text-slate-400'} />
+                        <a href={`tel:${(app as any).clientPhone}`} className={`text-sm font-medium hover:underline ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-blue-600'}`}>
+                          {(app as any).clientPhone || 'Sin teléfono'}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </>
             )}
 
+            {/* VISTA HISTORIAL */}
+            {showHistory && (
+              <div className={`rounded-2xl shadow-sm border overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                {pastAppointments.length === 0 ? (
+                  <p className="text-center py-8 text-slate-400 text-sm">Sin historial hoy.</p>
+                ) : (
+                  <div className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-slate-50'}`}>
+                    {pastAppointments.map((app: any) => (
+                      <div key={app.id} className={`p-4 flex items-center justify-between transition ${isDarkMode ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
+                        <div className="flex items-center gap-4 opacity-60">
+                          <span className="font-mono text-slate-500 font-bold">{app.time}</span>
+                          <div>
+                             <p className={`font-bold text-sm line-through decoration-slate-300 flex items-center gap-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-700'}`}>
+                               {app.clientName}
+                               {(app as any).isManual && <UserCheck size={12} className={isDarkMode ? 'text-blue-500' : 'text-blue-400'}/>}
+                             </p>
+                          </div>
+                        </div>
+                        <button onClick={() => handleDelete(app.id)} className="text-slate-200 hover:text-red-400 p-2">
+                          <X size={16}/>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* MODAL EDITAR */}
+      {editingApp && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className={`w-full max-w-sm rounded-3xl p-6 shadow-2xl ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
+            <h3 className={`font-bold text-lg mb-6 text-center ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Editar Reserva</h3>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 ml-1">Nombre</label>
+                <input className={`w-full border-none p-4 rounded-xl font-bold outline-none focus:ring-2 ${isDarkMode ? 'bg-slate-950 text-white focus:ring-slate-500' : 'bg-slate-50 text-slate-800 focus:ring-black'}`} value={editingApp.clientName} onChange={e => setEditingApp({...editingApp, clientName: e.target.value})} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 ml-1">Teléfono</label>
+                <input className={`w-full border-none p-4 rounded-xl font-bold outline-none focus:ring-2 ${isDarkMode ? 'bg-slate-950 text-white focus:ring-slate-500' : 'bg-slate-50 text-slate-800 focus:ring-black'}`} value={editingApp.clientPhone} onChange={e => setEditingApp({...editingApp, clientPhone: e.target.value})} />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setEditingApp(null)} className={`flex-1 py-4 font-bold rounded-xl transition ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-50'}`}>Cancelar</button>
+                <button className={`flex-1 font-bold py-4 rounded-xl hover:scale-[1.02] transition shadow-lg ${isDarkMode ? 'bg-slate-200 text-slate-900 hover:bg-white' : 'bg-black text-white'}`}>Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL AGREGAR MANUAL --- */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className={`w-full max-w-sm rounded-3xl p-6 shadow-2xl relative ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
+            <button onClick={() => setShowAddModal(false)} className="absolute top-4 right-4 text-slate-300 hover:text-slate-600"><X/></button>
+            
+            <div className="text-center mb-6">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-800'}`}>
+                <UserCheck size={24} />
+              </div>
+              <h3 className={`font-bold text-xl ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Cliente Presencial</h3>
+              <p className="text-xs text-slate-400 mt-1">Registrar corte sin reserva previa</p>
+            </div>
+
+            <form onSubmit={handleManualAdd} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 ml-1">Hora del corte</label>
+                <div className="relative">
+                  <select 
+                    className={`w-full border-none p-4 rounded-xl font-bold outline-none appearance-none focus:ring-2 ${isDarkMode ? 'bg-slate-950 text-white focus:ring-slate-500' : 'bg-slate-50 text-slate-800 focus:ring-black'}`}
+                    value={newApp.time}
+                    onChange={e => setNewApp({...newApp, time: e.target.value})}
+                  >
+                    <option value="" className={isDarkMode ? 'bg-slate-900' : ''}>Seleccionar Hora...</option>
+                    {HOURS.map(h => (
+                      <option key={h} value={h} className={isDarkMode ? 'bg-slate-900' : ''}>{h}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <History size={16}/>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 ml-1">Nombre Cliente</label>
+                <input 
+                  className={`w-full border-none p-4 rounded-xl font-bold outline-none focus:ring-2 ${isDarkMode ? 'bg-slate-950 text-white focus:ring-slate-500 placeholder-slate-700' : 'bg-slate-50 text-slate-800 focus:ring-black'}`}
+                  placeholder="Ej: Cliente Walk-in"
+                  value={newApp.name} 
+                  onChange={e => setNewApp({...newApp, name: e.target.value})} 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 ml-1">Teléfono (Opcional)</label>
+                <input 
+                  className={`w-full border-none p-4 rounded-xl font-bold outline-none focus:ring-2 ${isDarkMode ? 'bg-slate-950 text-white focus:ring-slate-500 placeholder-slate-700' : 'bg-slate-50 text-slate-800 focus:ring-black'}`}
+                  placeholder="Solo si lo tienes"
+                  value={newApp.phone} 
+                  onChange={e => setNewApp({...newApp, phone: e.target.value})} 
+                />
+              </div>
+
+              <button className={`w-full font-bold py-4 rounded-xl hover:scale-[1.02] transition shadow-lg mt-2 flex items-center justify-center gap-2 ${isDarkMode ? 'bg-amber-700 text-white hover:bg-amber-600' : 'bg-slate-900 text-white'}`}>
+                <Save size={18} /> Registrar Corte
+              </button>
+            </form>
           </div>
         </div>
       )}
