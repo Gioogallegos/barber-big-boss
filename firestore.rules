@@ -1,0 +1,117 @@
+// Reglas de seguridad de Firestore - Barber Big Boss
+//
+// IMPORTANTE: este archivo es la fuente de verdad de las reglas.
+// Si cambias las reglas en la consola de Firebase, copia el cambio
+// aqui tambien y commitealo. Si no, el historial se pierde.
+//
+// Contexto: la app es 100% cliente (el navegador habla directo con
+// Firestore). Las claves NEXT_PUBLIC_* son publicas por diseno, asi
+// que estas reglas son la UNICA proteccion real de los datos.
+// Toda validacion en React es para la experiencia del usuario, no
+// para seguridad: se puede saltar abriendo la consola del navegador.
+
+rules_version = '2';
+
+service cloud.firestore { 
+  match /databases/{database}/documents {
+
+    // Un solo segmento ({appointmentId}, no {document=**}) para que
+    // nadie pueda crear subcolecciones anidadas dentro de appointments.
+    match /appointments/{appointmentId} {
+
+      // ---------------------------------------------------------------
+      // LEER: publico
+      // ---------------------------------------------------------------
+      // Necesario: los clientes deben ver que horas estan ocupadas
+      // antes de reservar.
+      //
+      // LIMITACION CONOCIDA: esto tambien expone clientName y
+      // clientPhone de todos los clientes. No se arregla con reglas;
+      // requiere separar los datos publicos de los privados en dos
+      // colecciones (ver TODO al final del archivo).
+      allow read: if true;
+
+      // ---------------------------------------------------------------
+      // CREAR sin sesion: solo reservas, con forma estricta
+      // ---------------------------------------------------------------
+      // Los limites de tamano son los MISMOS que valida el formulario
+      // en src/components/bookingSystem.tsx (handleNameChange /
+      // handlePhoneChange / handleInitialSubmit). Si cambias uno,
+      // cambia el otro.
+      allow create: if request.auth == null
+
+        // Forma exacta del documento:
+        // hasOnly  -> ningun campo fuera de esta lista (bloquea campos
+        //             inventados como 'pagado' o 'esAdmin')
+        // hasAll   -> estos son obligatorios (bloquea documentos a medias)
+        && request.resource.data.keys().hasOnly(
+             ['date', 'time', 'clientName', 'clientPhone', 'createdAt',
+              'type', 'isOvertime']
+           )
+        && request.resource.data.keys().hasAll(
+             ['date', 'time', 'clientName', 'clientPhone', 'type']
+           )
+
+        // Un anonimo solo puede crear reservas, nunca bloqueos de dia
+        && request.resource.data.type == 'booking'
+
+        // Nombre: 3 a 20 caracteres (igual que el formulario)
+        && request.resource.data.clientName is string
+        && request.resource.data.clientName.size() >= 3
+        && request.resource.data.clientName.size() <= 20
+
+        // Telefono: 8 a 9 digitos (igual que el formulario)
+        && request.resource.data.clientPhone is string
+        && request.resource.data.clientPhone.size() >= 8
+        && request.resource.data.clientPhone.size() <= 9
+
+        // Formato de fecha y hora
+        && request.resource.data.date is string
+        && request.resource.data.date.size() == 10   // yyyy-MM-dd
+        && request.resource.data.time is string
+        && request.resource.data.time.size() == 5    // HH:mm
+
+        // El ID del documento debe coincidir con su contenido.
+        // La app usa `${date}-${time}` como ID para prevenir reservas
+        // dobles (runTransaction). Sin esta regla se pueden crear
+        // "reservas fantasma": ocupan la hora pero no aparecen en
+        // ninguna vista del admin, asi que no se pueden borrar.
+        && appointmentId == request.resource.data.date + '-'
+                            + request.resource.data.time;
+
+      // ---------------------------------------------------------------
+      // EL BARBERO (autenticado): poder total
+      // ---------------------------------------------------------------
+      // Necesita crear bloqueos de dia (`${date}-BLOCK` con
+      // type: 'day_blocked'), agregar clientes a mano (campo
+      // isManual: true), editar nombre/telefono y borrar citas.
+      // Aqui la proteccion es la autenticacion, no la forma del dato.
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Nota: no hace falta un bloque "allow read, write: if false" para
+    // el resto de las colecciones. Firestore niega por defecto todo lo
+    // que no calce con una regla. Cuando agregues colecciones nuevas
+    // (pagos, servicios), nacen cerradas hasta que las abras a proposito.
+  }
+}
+
+// ---------------------------------------------------------------------
+// TODO - lo que estas reglas NO pueden resolver
+// ---------------------------------------------------------------------
+//
+// 1. PRIVACIDAD DE DATOS PERSONALES
+//    `allow read: if true` expone clientName y clientPhone de todos
+//    los clientes a cualquiera. Es un problema de modelo de datos, no
+//    de permisos. Solucion: separar en dos colecciones
+//      appointments/  -> privado (solo el barbero)
+//      availability/  -> publico { date, horasOcupadas: [...] }
+//    Requiere una Cloud Function que mantenga availability
+//    sincronizada. Relevante para la Ley 19.628 (Chile).
+//
+// 2. ABUSO POR VOLUMEN
+//    Un script puede crear cientos de reservas validas y llenar la
+//    agenda. Cumplen todas las reglas, asi que Firestore las acepta:
+//    las reglas no saben contar ni limitar frecuencia.
+//    Solucion: Firebase App Check (verifica que la peticion venga de
+//    la app real y no de un script). Es configuracion, no codigo.
