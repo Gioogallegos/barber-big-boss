@@ -12,8 +12,30 @@
 
 rules_version = '2';
 
-service cloud.firestore { 
+service cloud.firestore {
   match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------
+    // QUIEN ES ADMIN
+    // -------------------------------------------------------------------
+    // No basta con "estar autenticado": con el registro publico activo,
+    // cualquiera puede crearse una cuenta con la API key del navegador y
+    // quedar autenticado. Autenticacion (quien eres) y autorizacion (que
+    // puedes hacer) son preguntas distintas.
+    //
+    // Los UID se sacan de: Authentication > Users > "Identificador de usuario"
+    //
+    // OJO: si borras y recreas un usuario, su UID CAMBIA y hay que
+    // actualizar esta lista, o esa persona pierde el acceso al admin.
+    function esAdmin() {
+      return request.auth != null
+        && request.auth.uid in [
+             // rg4life.daniel16@gmail.com - el barbero (dueno)
+             'yYE7R3YCn1NIJRoUvwwOny1HBej2',
+             // claudio.giogallegos@gmail.com - mantenimiento (desarrollo)
+             '75MDjIDbOgYHw3J2FkjLukmy6af1',
+           ];
+    }
 
     // Un solo segmento ({appointmentId}, no {document=**}) para que
     // nadie pueda crear subcolecciones anidadas dentro de appointments.
@@ -80,13 +102,17 @@ service cloud.firestore {
                             + request.resource.data.time;
 
       // ---------------------------------------------------------------
-      // EL BARBERO (autenticado): poder total
+      // EL ADMIN: poder total, pero solo los UID de la lista
       // ---------------------------------------------------------------
       // Necesita crear bloqueos de dia (`${date}-BLOCK` con
       // type: 'day_blocked'), agregar clientes a mano (campo
       // isManual: true), editar nombre/telefono y borrar citas.
-      // Aqui la proteccion es la autenticacion, no la forma del dato.
-      allow create, update, delete: if request.auth != null;
+      // Aqui no exigimos forma del dato: confiamos en el dueno.
+      //
+      // Antes decia `if request.auth != null`, que dejaba entrar a
+      // CUALQUIER cuenta autenticada, incluida una creada por un
+      // desconocido con la API key publica.
+      allow create, update, delete: if esAdmin();
     }
 
     // Nota: no hace falta un bloque "allow read, write: if false" para
