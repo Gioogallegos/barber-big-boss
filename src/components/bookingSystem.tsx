@@ -5,16 +5,39 @@ import { runTransaction, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAppointments } from '../hooks/useAppointments';
 import { toast } from 'sonner';
-import { Loader2, X, MapPin, Clock, ChevronRight, Star, CalendarX, AlertTriangle, MessageCircle, Scissors, Image as ImageIcon, ZoomIn } from 'lucide-react';
+import { Loader2, X, MapPin, Clock, ChevronRight, Plus, ChevronDown, Star, CalendarX, AlertTriangle, MessageCircle, Scissors, Image as ImageIcon, ZoomIn, Check } from 'lucide-react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { SERVICES, CORTE_DE_PELO, formatPrice, formatDuration } from '../lib/services';
+
 
 // --- CONFIGURACIÓN ---
 const BARBER_PHONE = "56988280660";
 
 // FOTOS DEL CARRUSEL
-const GALLERY_IMAGES = ["corte 1.jpeg", "corte 2.jpeg", "corte 3.jpeg",
-  "corte 4.jpeg", "corte 5.jpeg", "corte 6.jpeg"];
+const GALLERY_IMAGES = [
+  "global-fantasia-1.png",
+  "corte-pelo-1.png",
+  "bloque-de-color-1.png",
+  "disenos-1.png",
+  "global-platinado-1.png",
+  "corte-pelo-4.png",
+  "visos-platinados-1.png",
+  "disenos-2.png",
+  "global-platinado-2.png",
+  "corte-pelo-6.png",
+  "visos-platinados-2.png",
+  "disenos-3.png",
+  "corte-pelo-2.png",
+  "corte-pelo-3.png",
+  "corte-pelo-5.png",
+  "corte 1.jpeg",
+  "corte 2.jpeg",
+  "corte 3.jpeg",
+  "corte 4.jpeg",
+  "corte 5.jpeg",
+  "corte 6.jpeg",
+];
 
 const HOURS = [
   '08:00', '09:00',
@@ -24,8 +47,12 @@ const HOURS = [
 ];
 
 const OVERTIME_SLOTS = ['08:00', '09:00', '20:00', '21:00'];
-const BASE_PRICE = 10000;
+const BASE_PRICE = CORTE_DE_PELO.price;
 const EXTRA_FEE = 3000;
+// La tarjeta de arriba muestra los servicios que reservan tiempo.
+// Los agregados van en una tarjeta aparte, en filas compactas.
+const SERVICIOS_PRINCIPALES = SERVICES.filter((s) => !s.addon);
+const AGREGADOS = SERVICES.filter((s) => s.addon);
 
 
 
@@ -51,6 +78,10 @@ export default function BookingSystem() {
   const [errors, setErrors] = useState({ name: '', phone: '' });
   const [showOvertimeWarning, setShowOvertimeWarning] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  // Que servicio esta desplegado. null = todos cerrados.
+  // Guardamos el id y no un booleano para que al abrir uno se cierre el otro
+  // (comportamiento acordeon) cuando haya mas servicios.
+  const [expandedService, setExpandedService] = useState<string | null>(null);
 
   // Referencia para el carrusel automático
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -183,8 +214,8 @@ export default function BookingSystem() {
         <div className="flex flex-col items-center text-center">
           <div className="w-24 h-24 rounded-full bg-slate-800 mb-4 overflow-hidden border-2 border-slate-700 shadow-lg">
             <img
-              src="Foto_portada_dani.jpeg"
-              alt="Logo"
+              src="foto-perfil-dani.jpg"
+              alt="Daniel Barrera, barbero de The Big Boss"
               className="w-full h-full object-cover"
             />
           </div>
@@ -248,12 +279,12 @@ export default function BookingSystem() {
             <div
               key={index}
               // Se agregó 'active:' para feedback en móvil
-              className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-slate-800 shadow-lg relative group cursor-pointer transition-all duration-500 hover:border-amber-700/50 hover:shadow-amber-900/20 active:border-amber-700 active:shadow-amber-900/40 active:scale-95"
+              className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-slate-800 bg-slate-800 shadow-lg relative group cursor-pointer transition-all duration-500 hover:border-amber-700/50 hover:shadow-amber-900/20 active:border-amber-700 active:shadow-amber-900/40 active:scale-95"
             >
               <img
                 src={img}
-                alt={`Corte ${index + 1}`}
-                // AQUÍ EL CAMBIO CLAVE: group-active:grayscale-0
+                alt={`Estilo ${index + 1}`}
+                loading="lazy"
                 className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-active:grayscale-0 group-hover:scale-110 group-active:scale-110 transition-all duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
@@ -270,50 +301,140 @@ export default function BookingSystem() {
         </div>
       </div>
 
-      {/* TARJETAS SERVICIOS */}
+            {/* TARJETAS SERVICIOS */}
       <div className="px-4 mt-2 space-y-3 relative z-10">
         <h3 className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
           <Scissors size={12} /> Servicios
         </h3>
 
-        {/* Servicio 1 - CAMBIADO A FONT-SANS */}
-        <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800 flex justify-between items-center group hover:border-slate-600 transition-colors">
-          <div>
-            <h3 className="font-bold text-gray-100">Corte de Pelo</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 1 hora • Corte & Estilo
-            </p>
-          </div>
-          <div className="bg-emerald-950 border border-emerald-900 text-emerald-100 px-3 py-1 rounded text-sm font-bold shadow-inner">
-            $10.000
-          </div>
+        {/* UNA sola tarjeta que contiene todos los servicios.
+            divide-y dibuja las lineas separadoras entre filas sola. */}
+        <div className="bg-slate-900 rounded-xl shadow-lg border border-slate-800 overflow-hidden divide-y divide-slate-800">
+          {SERVICIOS_PRINCIPALES.map((service) => {
+            const isOpen = expandedService === service.id;
+
+            return (
+              <div key={service.id}>
+                {/* Fila: siempre visible, abre y cierra */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    const abriendo = !isOpen;
+                    const bloque = e.currentTarget.parentElement;
+                    setExpandedService(abriendo ? service.id : null);
+                    if (abriendo) {
+                      setTimeout(
+                        () => bloque?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }),
+                        50
+                      );
+                    }
+                  }}
+                  aria-expanded={isOpen}
+                  aria-controls={`servicio-${service.id}`}
+                  className={`w-full p-4 flex justify-between items-center gap-3 text-left transition-all duration-150 active:scale-[0.98] active:bg-slate-800/60 ${
+                    isOpen ? 'bg-slate-800/40' : 'hover:bg-slate-800/30'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-gray-100 flex items-center gap-1.5">
+                      {service.name}
+                      <ChevronDown
+                        size={16}
+                        className={`text-slate-500 transition-transform duration-300 ${
+                          isOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </h3>
+                    
+                    {service.durationMinutes && (
+  <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+    <Clock size={12} />
+    {formatDuration(service.durationMinutes)}
+  </p>
+)}
+                  </div>
+                  <div className="bg-emerald-950 border border-emerald-900 text-emerald-100 px-3 py-1 rounded text-sm font-bold shadow-inner shrink-0">
+                    {formatPrice(service.price)}
+                  </div>
+                </button>
+
+                {/* Panel desplegable */}
+                {isOpen && (
+                  <div
+                    id={`servicio-${service.id}`}
+                    className="px-4 pb-4 bg-slate-950/40 animar-despliegue"                  >
+                                       {service.description && (
+                      <p className="text-sm text-gray-400 leading-relaxed pt-1">
+                        {service.description}
+                      </p>
+                    )}
+
+                    {service.incluye.length > 0 && (
+                      <ul className="mt-3 space-y-1.5">
+                        {service.incluye.map((item) => (
+                          <li key={item} className="text-xs text-gray-300 flex items-start gap-2">
+                            <Check size={13} className="text-emerald-500 shrink-0 mt-[2px]" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {/* El carrusel solo aparece si el servicio tiene fotos */}
+                    {service.photos && service.photos.length > 0 && (
+                      <>
+                        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 mt-4 pb-1">
+                          {service.photos.map((photo, i) => (
+                            <div
+                              key={photo}
+                              className="snap-center shrink-0 w-36 h-48 rounded-lg overflow-hidden border border-slate-800 bg-slate-800"
+                            >
+                              <img
+                                src={photo}
+                                alt={`${service.name} — ejemplo ${i + 1}`}
+                                loading="lazy"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-slate-600 mt-2 text-center uppercase tracking-widest">
+                          Desliza para ver más
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Servicio 2 - CAMBIADO A FONT-SANS */}
-        <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800 flex justify-between items-center group hover:border-slate-600 transition-colors">
-          <div>
-            <h3 className="font-bold text-gray-100">Barba</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 15 minutos • Perfilado
-            </p>
-          </div>
-          <div className="bg-emerald-950 border border-emerald-900 text-emerald-100 px-3 py-1 rounded text-sm font-bold shadow-inner">
-            +$4.000
-          </div>
-        </div>
 
-        {/* Servicio 3 - CAMBIADO A FONT-SANS */}
-        <div className="bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800 flex justify-between items-center group hover:border-slate-600 transition-colors">
-          <div>
-            <h3 className="font-bold text-gray-100">Cejas</h3>
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Clock size={12} /> 15 minutos • Perfilado
-            </p>
-          </div>
-          <div className="bg-emerald-950 border border-emerald-900 text-emerald-100 px-3 py-1 rounded text-sm font-bold shadow-inner">
-            +$1.000
-          </div>
-        </div>
+        {/* AGREGADOS: suman al precio pero no al tiempo de la cita.
+            Filas compactas, sin flecha: no hay nada que desplegar. */}
+        {AGREGADOS.length > 0 && (
+          <>
+            <h3 className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
+              <Plus size={12} /> Agrega a tu corte
+            </h3>
+            <div className="bg-slate-900 rounded-xl shadow-lg border border-slate-800 overflow-hidden divide-y divide-slate-800">
+              {AGREGADOS.map((service) => (
+                <div
+                  key={service.id}
+                  className="px-4 py-3 flex justify-between items-center gap-3"
+                >
+                  <span className="font-bold text-gray-100 text-sm">
+                    {service.name}
+                  </span>
+                  <span className="bg-emerald-950 border border-emerald-900 text-emerald-100 px-3 py-1 rounded text-sm font-bold shadow-inner shrink-0">
+                    {formatPrice(service.price)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Sobrecupo - CAMBIADO A FONT-SANS */}
         <div className="bg-amber-950/20 p-4 rounded-xl shadow-sm border border-amber-900/30 flex justify-between items-center">

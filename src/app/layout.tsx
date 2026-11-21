@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'sonner'; 
@@ -18,10 +18,15 @@ export const metadata: Metadata = {
   description: "Reserva tu cita en Barber Big Boss de manera fácil y rápida. ¡Te esperamos!",
 };
 
+export const viewport: Viewport = {
+  themeColor: "#020617",
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body>
+            <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
         <Toaster position="top-center" richColors />
       </body>
