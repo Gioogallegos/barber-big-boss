@@ -214,7 +214,7 @@ export default function BookingSystem() {
         <div className="flex flex-col items-center text-center">
           <div className="w-24 h-24 rounded-full bg-slate-800 mb-4 overflow-hidden border-2 border-slate-700 shadow-lg">
             <img
-              src="foto-perfil-dani.jpg"
+              src="/foto-perfil-dani.jpg"
               alt="Daniel Barrera, barbero de The Big Boss"
               className="w-full h-full object-cover"
             />
@@ -282,7 +282,7 @@ export default function BookingSystem() {
               className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-slate-800 bg-slate-800 shadow-lg relative group cursor-pointer transition-all duration-500 hover:border-amber-700/50 hover:shadow-amber-900/20 active:border-amber-700 active:shadow-amber-900/40 active:scale-95"
             >
               <img
-                src={img}
+                src={`/${img}`}
                 alt={`Estilo ${index + 1}`}
                 loading="lazy"
                 className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-active:grayscale-0 group-hover:scale-110 group-active:scale-110 transition-all duration-700 ease-out"
@@ -390,7 +390,7 @@ export default function BookingSystem() {
                               className="snap-center shrink-0 w-36 h-48 rounded-lg overflow-hidden border border-slate-800 bg-slate-800"
                             >
                               <img
-                                src={photo}
+                                src={`/${photo}`}
                                 alt={`${service.name} — ejemplo ${i + 1}`}
                                 loading="lazy"
                                 className="w-full h-full object-cover"

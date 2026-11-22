@@ -172,7 +172,6 @@ export const SERVICES: Service[] = [
     photos: ['global-platinado-1.png', 'global-platinado-2.png'],
   },
 
-  // --- Desde aca, servicios a los que les falta informacion ---
 
   {
     id: 'barba',
