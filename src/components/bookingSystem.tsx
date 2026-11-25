@@ -396,9 +396,8 @@ export default function BookingSystem() {
                                 src={`/${photo}`}
                                 alt={`${service.name} — ejemplo ${i + 1}`}
                                 loading="lazy"
-                                className={`w-full h-full object-cover transition-[filter,transform] duration-300 ease-out group-hover:grayscale-0 group-active:scale-105 ${
-                                isPaused ? 'grayscale-0' : 'grayscale'
-                                    }`}   />
+                                className="w-full h-full object-cover"
+                              />
                             </div>
                           ))}
                         </div>
