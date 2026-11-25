@@ -57,3 +57,15 @@ button {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+@keyframes fundido {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes acercar {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animar-fundido { animation: fundido 180ms ease-out; }
+.animar-acercar { animation: acercar 220ms cubic-bezier(0.16, 1, 0.3, 1); }

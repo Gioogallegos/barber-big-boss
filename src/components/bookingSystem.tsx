@@ -5,9 +5,10 @@ import { runTransaction, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAppointments } from '../hooks/useAppointments';
 import { toast } from 'sonner';
-import { Loader2, X, MapPin, Clock, ChevronRight, Plus, ChevronDown, Star, CalendarX, AlertTriangle, MessageCircle, Scissors, Image as ImageIcon, ZoomIn, Check } from 'lucide-react';
+import { Loader2, X, MapPin, Clock, ChevronRight, Plus, ChevronDown, Star, CalendarX, AlertTriangle, MessageCircle, Scissors, Image as ImageIcon, Check } from 'lucide-react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import PhotoLightbox from './PhotoLightbox';
 import { SERVICES, CORTE_DE_PELO, formatPrice, formatDuration } from '../lib/services';
 
 
@@ -31,12 +32,6 @@ const GALLERY_IMAGES = [
   "corte-pelo-2.png",
   "corte-pelo-3.png",
   "corte-pelo-5.png",
-  "corte 1.jpeg",
-  "corte 2.jpeg",
-  "corte 3.jpeg",
-  "corte 4.jpeg",
-  "corte 5.jpeg",
-  "corte 6.jpeg",
 ];
 
 const HOURS = [
@@ -87,7 +82,11 @@ export default function BookingSystem() {
   const scrollRef = useRef<HTMLDivElement>(null);
   // Estado para pausar el carrusel si el usuario interactúa
   const [isPaused, setIsPaused] = useState(false);
-
+  const [lightbox, setLightbox] = useState<{
+    photos: string[];
+    index: number;
+    title: string;
+  } | null>(null);
   const isDayBlocked = appointments.some(app => (app as any).type === 'day_blocked');
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -276,29 +275,25 @@ export default function BookingSystem() {
           onTouchEnd={() => setIsPaused(false)}
         >
           {GALLERY_IMAGES.map((img, index) => (
-            <div
+                        <button
               key={index}
-              // Se agregó 'active:' para feedback en móvil
-              className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-slate-800 bg-slate-800 shadow-lg relative group cursor-pointer transition-all duration-500 hover:border-amber-700/50 hover:shadow-amber-900/20 active:border-amber-700 active:shadow-amber-900/40 active:scale-95"
+              type="button"
+              onClick={() => setLightbox({ photos: GALLERY_IMAGES, index, title: 'Estilos recientes' })}
+              aria-label={`Ampliar estilo ${index + 1}`}
+              className="snap-center shrink-0 w-40 h-56 rounded-xl overflow-hidden border border-slate-800 bg-slate-800 shadow-lg group transition-all duration-500 active:border-amber-700 active:shadow-amber-900/40 active:scale-95"
             >
               <img
                 src={`/${img}`}
                 alt={`Estilo ${index + 1}`}
                 loading="lazy"
-                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-active:grayscale-0 group-hover:scale-110 group-active:scale-110 transition-all duration-700 ease-out"
+                className="w-full h-full object-cover grayscale transition-[filter,transform] duration-300 ease-out group-hover:grayscale-0 group-active:grayscale-0 group-active:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-500 delay-100">
-                <ZoomIn size={16} className="text-white/80" />
-              </div>
-              <div className="absolute bottom-3 left-0 right-0 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 border-b border-amber-500/0 group-hover:border-amber-500 pb-0.5">
-                  Estilo {index + 1}
-                </span>
-              </div>
-            </div>
+            </button>
           ))}
         </div>
+        <p className="text-[10px] text-slate-600 mt-1 text-center uppercase tracking-widest">
+          Toca una foto para ampliar
+        </p>
       </div>
 
             {/* TARJETAS SERVICIOS */}
@@ -393,8 +388,9 @@ export default function BookingSystem() {
                                 src={`/${photo}`}
                                 alt={`${service.name} — ejemplo ${i + 1}`}
                                 loading="lazy"
-                                className="w-full h-full object-cover"
-                              />
+                                className={`w-full h-full object-cover transition-[filter,transform] duration-300 ease-out group-hover:grayscale-0 group-active:scale-105 ${
+                                isPaused ? 'grayscale-0' : 'grayscale'
+                                    }`}   />
                             </div>
                           ))}
                         </div>
@@ -527,7 +523,24 @@ export default function BookingSystem() {
           )}
       </div>
 
-      <div className="text-center mt-12 text-slate-700 text-[10px] uppercase tracking-widest pb-10">By order of Big Boss Barber</div>
+      <footer className="text-center mt-12 pb-10 space-y-3">
+        <p className="text-slate-700 text-[10px] uppercase tracking-widest">
+          By order of Big Boss Barber
+        </p>
+
+        <div className="w-8 h-px bg-slate-800 mx-auto" />
+
+        <p className="group inline-flex items-center gap-1.5 text-[10px] text-slate-600 cursor-default select-none">
+          <span className="inline-block transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-12">
+            🥷
+          </span>
+          Dev
+          <span className="font-bold text-slate-500 group-hover:text-amber-500 transition-colors">
+            Claudio Gallegos
+          </span>
+          <span aria-hidden="true">💻</span>
+        </p>
+      </footer>
 
       {/* MODAL PRINCIPAL */}
       {selectedSlot && (
@@ -635,7 +648,14 @@ export default function BookingSystem() {
                 )}
               </>
             )}
-
+      {lightbox && (
+        <PhotoLightbox
+          photos={lightbox.photos}
+          startIndex={lightbox.index}
+          title={lightbox.title}
+          onClose={() => setLightbox(null)}
+        />
+      )}
           </div>
         </div>
       )}
