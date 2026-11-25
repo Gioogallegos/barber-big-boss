@@ -82,6 +82,7 @@ export default function BookingSystem() {
   const scrollRef = useRef<HTMLDivElement>(null);
   // Estado para pausar el carrusel si el usuario interactúa
   const [isPaused, setIsPaused] = useState(false);
+  const [firmaActiva, setFirmaActiva] = useState(false);
   const [lightbox, setLightbox] = useState<{
     photos: string[];
     index: number;
@@ -530,16 +531,31 @@ export default function BookingSystem() {
 
         <div className="w-8 h-px bg-slate-800 mx-auto" />
 
-        <p className="group inline-flex items-center gap-1.5 text-[10px] text-slate-600 cursor-default select-none">
-          <span className="inline-block transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-12">
+        <button
+          type="button"
+          onClick={() => {
+            setFirmaActiva(true);
+            setTimeout(() => setFirmaActiva(false), 800);
+          }}
+          className="group inline-flex items-center gap-1.5 text-[10px] text-slate-600 select-none"
+        >
+          <span
+            className={`inline-block transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-12 ${
+              firmaActiva ? '-translate-y-1 rotate-12 scale-125' : ''
+            }`}
+          >
             🥷
           </span>
           Dev
-          <span className="font-bold text-slate-500 group-hover:text-amber-500 transition-colors">
+          <span
+            className={`font-bold transition-colors group-hover:text-amber-500 ${
+              firmaActiva ? 'text-amber-500' : 'text-slate-500'
+            }`}
+          >
             Claudio Gallegos
           </span>
           <span aria-hidden="true">💻</span>
-        </p>
+        </button>
       </footer>
 
       {/* MODAL PRINCIPAL */}
