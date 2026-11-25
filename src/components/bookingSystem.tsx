@@ -83,6 +83,13 @@ export default function BookingSystem() {
   // Estado para pausar el carrusel si el usuario interactúa
   const [isPaused, setIsPaused] = useState(false);
   const [firmaActiva, setFirmaActiva] = useState(false);
+  const firmaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animarFirma = () => {
+    if (firmaTimer.current) clearTimeout(firmaTimer.current);
+    setFirmaActiva(true);
+    firmaTimer.current = setTimeout(() => setFirmaActiva(false), 800);
+  };
+
   const [lightbox, setLightbox] = useState<{
     photos: string[];
     index: number;
@@ -533,10 +540,9 @@ export default function BookingSystem() {
 
         <button
           type="button"
-          onClick={() => {
-            setFirmaActiva(true);
-            setTimeout(() => setFirmaActiva(false), 800);
-          }}
+          onClick={animarFirma}
+          onTouchStart={animarFirma}
+          onMouseEnter={animarFirma}
           className="group inline-flex items-center gap-1.5 text-[10px] text-slate-600 select-none"
         >
           <span
@@ -552,7 +558,7 @@ export default function BookingSystem() {
               firmaActiva ? 'text-amber-500' : 'text-slate-500'
             }`}
           >
-            Claudio Gallegos
+            Giovinho
           </span>
           <span aria-hidden="true">💻</span>
         </button>
